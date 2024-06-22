@@ -45,4 +45,6 @@ namespace tower {
     void OperationSaveFileAs();
 
     LRESULT CALLBACK _WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
+
+    LRESULT CALLBACK _EditorProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
 }

@@ -28,12 +28,12 @@ CPPFLAGS := $(INC_FLAGS) -MMD -MP
 
 # The final build step.
 $(BUILD_DIR)/$(TARGET_EXEC): $(OBJS)
-	$(CXX) $(OBJS) -o $@ $(LDFLAGS) -municode -lcomdlg32
+	$(CXX) $(OBJS) -o $@ $(LDFLAGS) -municode -lcomdlg32 -lgdi32
 
 # Build step for C++ source
 $(BUILD_DIR)/%.cpp.o: %.cpp
 	mkdir -p $(dir $@)
-	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -c -municode -lcomdlg32 $< -o $@
+	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -c -municode -lcomdlg32 -lgdi32 $< -o $@
 
 
 .PHONY: clean

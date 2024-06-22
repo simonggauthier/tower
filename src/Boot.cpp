@@ -86,6 +86,8 @@ namespace tower {
             NULL
         );
 
+        // (WNDPROC)SetWindowLongPtr(_editorHwnd, GWLP_WNDPROC, (LONG_PTR)_EditorProc);
+
         ShowWindow(_mainWindowHwnd, SW_SHOWDEFAULT);
     }
 
@@ -264,9 +266,24 @@ namespace tower {
                             break;
                     }
                 }
+
+            case WM_CTLCOLOREDIT:
+                {
+                    HDC hdc = (HDC)wParam;
+                    SetBkColor(hdc, RGB(10, 10, 10));
+                    SetTextColor(hdc, RGB(200, 200, 200));
+
+                    HBRUSH hBrush = CreateSolidBrush(RGB(10, 10, 10));
+
+                    return (LRESULT)hBrush;
+                }
         }
 
         return DefWindowProc(hwnd, uMsg, wParam, lParam);
+    }
+
+    LRESULT CALLBACK _EditorProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
+        return _WindowProc(hwnd, uMsg, wParam, lParam);
     }
 }
 

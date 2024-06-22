@@ -78,7 +78,7 @@ namespace tower {
             0,
             L"EDIT",
             L"",
-            WS_TABSTOP | WS_VISIBLE | WS_CHILD | WS_BORDER | ES_MULTILINE | ES_AUTOVSCROLL | ES_AUTOHSCROLL,
+            WS_BORDER | WS_CHILD | WS_VISIBLE | WS_VSCROLL | ES_LEFT |  ES_MULTILINE | ES_AUTOVSCROLL,
             10, 50, 400, 400,
             _mainWindowHwnd,
             NULL,
@@ -235,17 +235,6 @@ namespace tower {
                 PostQuitMessage(0);
                 return 0;
 
-            case WM_PAINT:
-                {
-                    PAINTSTRUCT ps;
-                    HDC hdc = BeginPaint(hwnd, &ps);
-
-                    FillRect(hdc, &ps.rcPaint, (HBRUSH) (COLOR_WINDOW));
-
-                    EndPaint(hwnd, &ps);
-                }
-                return 0;
-            
             case WM_SIZE:
                 {
                     RECT rcClient;

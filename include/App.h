@@ -48,7 +48,6 @@ namespace tower {
         Editor* _editor;
 
         Handles _handles;
-        WNDPROC _originalEditorWndProc;
 
         std::wstring _currentFileName;
     };

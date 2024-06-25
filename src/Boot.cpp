@@ -86,12 +86,15 @@ namespace tower {
             NULL
         );
 
-        // (WNDPROC)SetWindowLongPtr(_editorHwnd, GWLP_WNDPROC, (LONG_PTR)_EditorProc);
+        _editorFont = CreateFont(18, 0, 0, 0, FW_DONTCARE, FALSE, FALSE, FALSE, DEFAULT_CHARSET, OUT_TT_PRECIS, CLIP_DEFAULT_PRECIS, CLEARTYPE_QUALITY, DEFAULT_PITCH | FF_DONTCARE, L"Consolas");
+        SendMessage(_editorHwnd, WM_SETFONT, (WPARAM)_editorFont, TRUE);
+
+        _originalEditorProc = (WNDPROC) SetWindowLongPtr(_editorHwnd, GWLP_WNDPROC, (LONG_PTR)_EditorProc);
 
         ShowWindow(_mainWindowHwnd, SW_SHOWDEFAULT);
     }
 
-    void eventLoop() {
+    void EventLoop() {
         MSG msg = { };
 
         while (GetMessage(&msg, NULL, 0, 0) > 0)
@@ -99,6 +102,10 @@ namespace tower {
             TranslateMessage(&msg);
             DispatchMessage(&msg);
         }
+    }
+
+    void Destroy() {
+        DeleteObject(_editorFont);
     }
 
     void _SetEditorText() {
@@ -186,6 +193,17 @@ namespace tower {
         }
 
         return L"";
+    }
+
+    std::wstring _GetPreviousLine() {
+        DWORD size = 100;
+        wchar_t buffer[size];
+        
+        CopyMemory(buffer, &size, sizeof(DWORD));
+        int copied = SendMessage(_editorHwnd, EM_GETLINE, 0, (LPARAM)buffer);
+        buffer[copied] = 0;
+
+        return std::wstring(buffer);
     }
 
     void OperationNewFile() {
@@ -283,14 +301,31 @@ namespace tower {
     }
 
     LRESULT CALLBACK _EditorProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
-        return _WindowProc(hwnd, uMsg, wParam, lParam);
+        switch (uMsg) {
+            case WM_CHAR:
+                if (wParam == VK_TAB) {
+                    SendMessage(hwnd, EM_REPLACESEL, TRUE, (LPARAM)L"    ");
+                    return 0;
+                } else if (wParam == VK_RETURN) {
+                    SendMessage(hwnd, EM_REPLACESEL, TRUE, (LPARAM)L"\r\n");
+
+                    std::wstring previousLine = _GetPreviousLine();
+                    std::wcout << previousLine;
+
+                    return 0;
+                }
+        }
+        
+        return CallWindowProc(_originalEditorProc, hwnd, uMsg, wParam, lParam);
     }
 }
 
 int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLine, int nCmdShow) {
     tower::CreateMainWindow(hInstance);
 
-    tower::eventLoop();
+    tower::EventLoop();
+
+    tower::Destroy();
 
     return 0;
 }

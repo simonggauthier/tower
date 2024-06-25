@@ -9,11 +9,16 @@ namespace tower {
     static HWND _saveFileAsButtonHwnd;
     static HWND _editorHwnd;
 
+    WNDPROC _originalEditorProc;
+
     // Button ids
     static const int _newFileButtonId = 1;
     static const int _openFileButtonId = 2;
     static const int _saveFileButtonId = 3;
     static const int _saveFileAsButtonId = 4;
+
+    // Fonts
+    HFONT _editorFont;
 
     // Data
     static std::wstring _editorText;
@@ -23,6 +28,8 @@ namespace tower {
     void CreateMainWindow(HINSTANCE hInstance);
 
     void EventLoop();
+
+    void Destroy();
 
     // Util
     void _SetEditorText();
@@ -34,6 +41,8 @@ namespace tower {
     void _WriteCurrentFile();
     
     std::wstring _AskFilePath(bool mustExist);
+
+    std::wstring _GetPreviousLine();
 
     // Operations
     void OperationNewFile();

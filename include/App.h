@@ -1,6 +1,8 @@
 #pragma once
 
 #include "Tower.h"
+#include "Editor.h"
+#include "EditorContainer.h"
 
 namespace tower {
     struct Handles {
@@ -9,7 +11,6 @@ namespace tower {
         HWND openFileButton;
         HWND saveFileButton;
         HWND saveFileAsButton;
-        HWND editor;
     };
 
     enum ControlIds {
@@ -19,7 +20,7 @@ namespace tower {
         saveFileAsButton = 104
     };
 
-    class App {
+    class App : public EditorContainer {
     public:
         App();
         ~App();
@@ -32,26 +33,22 @@ namespace tower {
         void OperationSaveFile();
         void OperationSaveFileAs();
 
-        LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
-        LRESULT CALLBACK EditorProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
+        Editor* GetEditor() { return _editor; }
 
-        static LRESULT CALLBACK TrueWindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
-        static LRESULT CALLBACK TrueEditorProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
+        LRESULT CALLBACK WndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
+
+        static LRESULT CALLBACK TrueWndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
 
     private:
-        int _GetEditorTextLength();
-        void _SetEditorText(const std::wstring& text);
-        void _ClearEditorText();
-        void _GetEditorText(wchar_t* buffer, int length);
         void _ReadCurrentFile();
         void _WriteCurrentFile();
         std::wstring _AskFilePath(bool mustExist);
         void _SetWindowTitle();
 
+        Editor* _editor;
+
         Handles _handles;
         WNDPROC _originalEditorWndProc;
-        
-        HFONT _editorFont;
 
         std::wstring _currentFileName;
     };

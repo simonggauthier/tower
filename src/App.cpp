@@ -6,14 +6,14 @@ namespace tower {
     }
 
     App::~App() {
-        DeleteObject(_editorFont);
+        delete _editor;
     }
 
     void App::CreateMainWindow(HINSTANCE hInstance) {
         const wchar_t CLASS_NAME[]  = L"Tower Window Class";
 
         WNDCLASS wc = { };
-        wc.lpfnWndProc = App::TrueWindowProc;
+        wc.lpfnWndProc = App::TrueWndProc;
         wc.hInstance = hInstance;
         wc.lpszClassName = CLASS_NAME;
         wc.hCursor = LoadCursor(NULL, IDC_ARROW);
@@ -82,22 +82,10 @@ namespace tower {
             NULL
         );
 
-        _handles.editor = CreateWindowEx(
-            0,
-            L"EDIT",
-            L"",
-            WS_BORDER | WS_CHILD | WS_VISIBLE | WS_VSCROLL | ES_LEFT |  ES_MULTILINE | ES_AUTOVSCROLL,
-            10, 50, 400, 400,
-            _handles.mainWindow,
-            NULL,
-            hInstance,
-            NULL
-        );
+        std::ifstream cstream("c:\\dev\\projects\\tower\\tower.json");
+        nlohmann::json config = nlohmann::json::parse(cstream);
 
-        _editorFont = CreateFont(18, 0, 0, 0, FW_DONTCARE, FALSE, FALSE, FALSE, DEFAULT_CHARSET, OUT_TT_PRECIS, CLIP_DEFAULT_PRECIS, CLEARTYPE_QUALITY, DEFAULT_PITCH | FF_DONTCARE, L"Consolas");
-        SendMessage(_handles.editor, WM_SETFONT, (WPARAM)_editorFont, TRUE);
-
-        _originalEditorWndProc = (WNDPROC) SetWindowLongPtr(_handles.editor, GWLP_WNDPROC, (LONG_PTR)App::TrueEditorProc);
+        _editor = new Editor(_handles.mainWindow, hInstance, config["editor"]["fontSize"]);
 
         ShowWindow(_handles.mainWindow, SW_SHOWDEFAULT);
     }
@@ -110,22 +98,6 @@ namespace tower {
             TranslateMessage(&msg);
             DispatchMessage(&msg);
         }
-    }
-
-    int App::_GetEditorTextLength() {
-        return GetWindowTextLength(_handles.editor);
-    }
-
-    void App::_SetEditorText(const std::wstring& text) {
-        SetWindowText(_handles.editor, text.c_str());
-    }
-
-    void App::_ClearEditorText() {
-        SetWindowText(_handles.editor, L"");
-    }
-
-    void App::_GetEditorText(wchar_t* buffer, int length) {
-        GetWindowText(_handles.editor, buffer, length);
     }
 
     void App::_ReadCurrentFile() {
@@ -142,7 +114,7 @@ namespace tower {
             buffer << line << L"\r\n";
         }
 
-        _SetEditorText(buffer.str());
+        _editor->SetText(buffer.str().c_str());
     }
 
     void App::_WriteCurrentFile() {
@@ -156,11 +128,11 @@ namespace tower {
             return;
         }
 
-        const int length = _GetEditorTextLength();
+        const int length = _editor->GetTextLength();
         // Slow?
-        wchar_t* text = new wchar_t[length];
+        wchar_t* text = new wchar_t[length + 1];
 
-        _GetEditorText(text, length);
+        _editor->GetText(text, length + 1);
 
         for (int i = 0; i < length; i++) {
             // ?????
@@ -223,7 +195,7 @@ namespace tower {
     }
 
     void App::OperationNewFile() {
-        _ClearEditorText();
+        _editor->Clear();
 
         _currentFileName = L"";
 
@@ -264,7 +236,7 @@ namespace tower {
         _SetWindowTitle();
     }
 
-    LRESULT CALLBACK App::WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
+    LRESULT CALLBACK App::WndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
         switch (uMsg) {
             case WM_DESTROY:
                 PostQuitMessage(0);
@@ -275,7 +247,7 @@ namespace tower {
                     RECT rcClient;
                     GetClientRect(hwnd, &rcClient);
 
-                    SetWindowPos(_handles.editor, NULL, 0, 50, rcClient.right, rcClient.bottom - 50, SWP_NOZORDER);
+                    SetWindowPos(_editor->getHwnd(), NULL, 0, 50, rcClient.right, rcClient.bottom - 50, SWP_NOZORDER);
                 }
                 return 0;
 
@@ -315,22 +287,7 @@ namespace tower {
         return DefWindowProc(hwnd, uMsg, wParam, lParam);
     }
 
-    LRESULT CALLBACK App::EditorProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
-        switch (uMsg) {
-            case WM_CHAR:
-                if (wParam == VK_TAB) {
-                    SendMessage(hwnd, EM_REPLACESEL, TRUE, (LPARAM)L"    ");
-                    return 0;
-                } else if (wParam == VK_RETURN) {
-                    SendMessage(hwnd, EM_REPLACESEL, TRUE, (LPARAM)L"\r\n");
-                    return 0;
-                }
-        }
-        
-        return CallWindowProc(_originalEditorWndProc, hwnd, uMsg, wParam, lParam);
-    }
-
-    LRESULT CALLBACK App::TrueWindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
+    LRESULT CALLBACK App::TrueWndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
         App* app = NULL;
         
         if (uMsg == WM_NCCREATE) {
@@ -342,20 +299,9 @@ namespace tower {
         }
 
         if (app) {
-            return app->WindowProc(hwnd, uMsg, wParam, lParam);
+            return app->WndProc(hwnd, uMsg, wParam, lParam);
         }
 
         return DefWindowProc(hwnd, uMsg, wParam, lParam);
-    }
-
-    LRESULT CALLBACK App::TrueEditorProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
-        HWND mainWindowHwnd = GetParent(hwnd);
-        App* app = (App*) GetWindowLongPtr(hwnd, GWLP_USERDATA);
-
-        if (app) {
-            return app->EditorProc(hwnd, uMsg, wParam, lParam);
-        }
-        
-        return 0;
     }
 }

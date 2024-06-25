@@ -206,11 +206,23 @@ namespace tower {
         return std::wstring(buffer);
     }
 
+    void _SetWindowTitle() {
+        std::wstring title = L"Tower Editor";
+
+        if (!_currentFileName.empty()) {
+            title += L" - ";
+            title += _currentFileName;
+        }
+
+        SetWindowText(_mainWindowHwnd, title.c_str());
+    }
+
     void OperationNewFile() {
         _editorText = L"";
         _currentFileName = L"";
 
         _SetEditorText();
+        _SetWindowTitle();
     }
 
     void OperationOpenFile() {
@@ -223,8 +235,8 @@ namespace tower {
         _currentFileName = filePath;
 
         _ReadCurrentFile();
-
         _SetEditorText();
+        _SetWindowTitle();
     }
 
     void OperationSaveFile() {
@@ -247,6 +259,7 @@ namespace tower {
 
         _GetEditorText();
         _WriteCurrentFile();
+        _SetWindowTitle();
     }
 
     LRESULT CALLBACK _WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {

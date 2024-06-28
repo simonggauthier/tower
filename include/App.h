@@ -7,17 +7,17 @@
 namespace tower {
     struct Handles {
         HWND mainWindow;
-        HWND newFileButton;
-        HWND openFileButton;
-        HWND saveFileButton;
-        HWND saveFileAsButton;
+        HMENU menuBar;
+        HMENU fileMenu;
+        HACCEL acceleratorTable;
     };
 
     enum ControlIds {
-        newFileButton = 101,
-        openFileButton = 102,
-        saveFileButton = 103,
-        saveFileAsButton = 104
+        newFileMenuItem = 101,
+        openFileMenuItem = 102,
+        saveFileMenuItem = 103,
+        saveFileAsMenuItem = 104,
+        exitMenuItem = 105
     };
 
     class App : public EditorContainer {
@@ -32,6 +32,7 @@ namespace tower {
         void OperationOpenFile();
         void OperationSaveFile();
         void OperationSaveFileAs();
+        void OperationExit();
 
         Editor* GetEditor() { return _editor; }
 
@@ -40,14 +41,19 @@ namespace tower {
         static LRESULT CALLBACK TrueWndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
 
     private:
+        void _CreateMenu();
+        void _CreateEditor();
+        void _CreateAccelerators();
+    
         void _ReadCurrentFile();
         void _WriteCurrentFile();
         std::wstring _AskFilePath(bool mustExist);
         void _SetWindowTitle();
 
-        Editor* _editor;
-
+        HINSTANCE _hInstance;
         Handles _handles;
+        
+        Editor* _editor;
 
         std::wstring _currentFileName;
     };

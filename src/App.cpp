@@ -245,9 +245,9 @@ namespace tower {
             case WM_SIZE:
                 {
                     RECT rcClient;
-                    GetClientRect(hwnd, &rcClient);
 
-                    SetWindowPos(_editor->getHwnd(), NULL, 0, 50, rcClient.right, rcClient.bottom - 50, SWP_NOZORDER);
+                    GetClientRect(hwnd, &rcClient);
+                    _editor->SetPosition(0, 50, rcClient.right, rcClient.bottom - 50);
                 }
                 return 0;
 

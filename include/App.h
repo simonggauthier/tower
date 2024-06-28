@@ -37,7 +37,6 @@ namespace tower {
         Editor* GetEditor() { return _editor; }
 
         LRESULT CALLBACK WndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
-
         static LRESULT CALLBACK TrueWndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
 
     private:

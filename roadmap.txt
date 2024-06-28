@@ -1,0 +1,5 @@
+- File state display (status bar?) + warnings
+- Tabs
+- File list
+- Text formatting
+- Tests

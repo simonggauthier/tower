@@ -1,8 +1,13 @@
 #pragma once
 
-#include "Tower.h"
+#include <string>
+
+#include <Windows.h>
+
 #include "Editor.h"
 #include "EditorContainer.h"
+#include "File.h"
+#include "EventListener.h"
 
 namespace tower {
     struct Handles {
@@ -20,40 +25,44 @@ namespace tower {
         exitMenuItem = 105
     };
 
-    class App : public EditorContainer {
+    class App : public EditorContainer, public EventListener {
     public:
         App();
         ~App();
 
-        void CreateMainWindow(HINSTANCE hInstance);
-        void EventLoop();
+        void createMainWindow(HINSTANCE hInstance);
+        void eventLoop();
         
-        void OperationNewFile();
-        void OperationOpenFile();
-        void OperationSaveFile();
-        void OperationSaveFileAs();
-        void OperationExit();
+        void operationNewFile();
+        void operationOpenFile();
+        void operationSaveFile();
+        void operationSaveFileAs();
+        void operationExit();
 
-        Editor* GetEditor() { return _editor; }
+        Editor* getEditor() { return _editor; }
+        
+        void onEvent();
 
-        LRESULT CALLBACK WndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
-        static LRESULT CALLBACK TrueWndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
+        LRESULT CALLBACK wndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
+        static LRESULT CALLBACK trueWndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
 
     private:
-        void _CreateMenu();
-        void _CreateEditor();
-        void _CreateAccelerators();
+        void _createMenu();
+        void _createEditor();
+        void _createAccelerators();
     
-        void _ReadCurrentFile();
-        void _WriteCurrentFile();
-        std::wstring _AskFilePath(bool mustExist);
-        void _SetWindowTitle();
+        void _readCurrentFile();
+        void _writeCurrentFile();
+        std::wstring _askFilePath(bool mustExist);
+        
+        void _setWindowTitle();
+        
+        bool _askConfirmation(const std::wstring& title, const std::wstring& message);
 
         HINSTANCE _hInstance;
         Handles _handles;
         
         Editor* _editor;
-
-        std::wstring _currentFileName;
+        File* _currentFile;
     };
 }

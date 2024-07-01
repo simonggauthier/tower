@@ -1,30 +1,40 @@
 #pragma once
 
-#include "Tower.h"
+#include <vector>
+
+#include <Windows.h>
+
+#include "EventListener.h"
 
 namespace tower {
     class Editor {
     public:
         Editor(HWND parentHwnd, HINSTANCE hInstance, int fontSize);
-        
         ~Editor();
         
-        void SetPosition(int x, int y, int width, int height);
-        int GetTextLength();
-        void GetText(wchar_t* buffer, int length);
-        void SetText(const wchar_t* text);
-        void Clear();
+        void setPosition(int x, int y, int width, int height);
 
-        int GetCurrentLineIndex();
-        void GetLine(int index, wchar_t* buffer, int length);
+        int getTextLength() const;
+        void getText(wchar_t* buffer, int length) const;
+        void setText(const wchar_t* text);
+        void clear();
 
-        HWND GetHwnd() { return _hwnd; }
+        int getCurrentLineIndex() const;
+        void getLine(int index, wchar_t* buffer, int length) const;
 
-        LRESULT CALLBACK WndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
-        static LRESULT CALLBACK TrueWndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
+        void addEventListener(EventListener* eventListener) { _eventListeners.push_back(eventListener); }
+
+        HWND getHwnd() const { return _hwnd; }
+
+        LRESULT CALLBACK wndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
+        static LRESULT CALLBACK trueWndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
 
     private:
-        int _CountSpacesAtStartOfLine();
+        void _broadcastEvent() const;
+        
+        int _countSpacesAtStartOfLine() const;
+        
+        std::vector<EventListener*> _eventListeners;
 
         HWND _hwnd;
         WNDPROC _originalWndProc;

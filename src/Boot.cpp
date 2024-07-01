@@ -3,8 +3,8 @@
 int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLine, int nCmdShow) {
     tower::App app;
 
-    app.CreateMainWindow(hInstance);
-    app.EventLoop();
+    app.createMainWindow(hInstance);
+    app.eventLoop();
 
     return 0;
 }

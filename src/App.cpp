@@ -1,26 +1,40 @@
+#include <string>
+#include <sstream>
+#include <fstream>
+
+#include <Windows.h>
+
+#include "json.hpp"
+
 #include "App.h"
 
 namespace tower {
     App::App() :
         _hInstance(0),
-        _editor(0),
-        _currentFileName(L"") {
+        _editor(nullptr),
+        _currentFile(nullptr) {
     }
 
     App::~App() {
-        delete _editor;
+        if (_currentFile != nullptr) {
+            delete _currentFile;
+        }
+        
+        if (_editor != nullptr) {
+            delete _editor;
+        }
     }
 
-    void App::CreateMainWindow(HINSTANCE hInstance) {
+    void App::createMainWindow(HINSTANCE hInstance) {
         const wchar_t CLASS_NAME[]  = L"Tower Window Class";
         
         _hInstance = hInstance;
 
         WNDCLASS wc = { };
-        wc.lpfnWndProc = App::TrueWndProc;
+        wc.lpfnWndProc = App::trueWndProc;
         wc.hInstance = hInstance;
         wc.lpszClassName = CLASS_NAME;
-        wc.hCursor = LoadCursor(NULL, IDC_ARROW);
+        wc.hCursor = LoadCursor(nullptr, IDC_ARROW);
 
         RegisterClass(&wc);
 
@@ -31,23 +45,25 @@ namespace tower {
             WS_OVERLAPPEDWINDOW,            // Window style
             // Size and position
             CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT,
-            NULL,       // Parent window    
-            NULL,       // Menu
+            nullptr,       // Parent window    
+            nullptr,       // Menu
             hInstance,  // Instance handle
             this        // Additional application data
         );
 
-        _CreateMenu();
-        _CreateEditor();
-        _CreateAccelerators();
+        _createMenu();
+        _createEditor();
+        _createAccelerators();
+
+        operationNewFile();
 
         ShowWindow(_handles.mainWindow, SW_SHOWDEFAULT);
     }
 
-    void App::EventLoop() {
+    void App::eventLoop() {
         MSG msg = { };
 
-        while (GetMessage(&msg, NULL, 0, 0) > 0) {
+        while (GetMessage(&msg, nullptr, 0, 0) > 0) {
             if (!TranslateAccelerator(_handles.mainWindow, _handles.acceleratorTable, &msg)) {
                 TranslateMessage(&msg);
                 DispatchMessage(&msg);
@@ -55,65 +71,93 @@ namespace tower {
         }
     }
 
-    void App::OperationNewFile() {
-        _editor->Clear();
+    void App::operationNewFile() {
+        _editor->clear();
 
-        _currentFileName = L"";
+        if (_currentFile != nullptr) {
+            delete _currentFile;
+        }
 
-        _SetWindowTitle();
+        _currentFile = new File();
+
+        _setWindowTitle();
     }
 
-    void App::OperationOpenFile() {
-        std::wstring filePath = _AskFilePath(true);
+    void App::operationOpenFile() {
+        std::wstring filename = _askFilePath(true);
 
-        if (filePath.empty()) {
+        if (filename.empty()) {
             return;
         }
 
-        _currentFileName = filePath;
+        if (_currentFile != nullptr) {
+            delete _currentFile;
+        }
 
-        _ReadCurrentFile();
-        _SetWindowTitle();
+        _currentFile = new File(filename);
+
+        _readCurrentFile();
+        _setWindowTitle();
     }
 
-    void App::OperationSaveFile() {
-        if (_currentFileName.empty()) {
-            OperationSaveFileAs();
+    void App::operationSaveFile() {
+        if (_currentFile->getState() == FileStates::uncreated) {
+            operationSaveFileAs();
         } else {
-            _WriteCurrentFile();
+            _writeCurrentFile();
+            _setWindowTitle();
         }
     }
 
-    void App::OperationSaveFileAs() {
-        std::wstring filePath = _AskFilePath(false);
+    void App::operationSaveFileAs() {
+        std::wstring filename = _askFilePath(false);
 
-        if (filePath.empty()) {
+        if (filename.empty()) {
             return;
         }
 
-        _currentFileName = filePath;
+        if (_currentFile != nullptr) {
+            delete _currentFile;
+        }
 
-        _WriteCurrentFile();
-        _SetWindowTitle();
+        _currentFile = new File(filename);
+
+        _writeCurrentFile();
+        _setWindowTitle();
     }
 
-    void App::OperationExit() {
-        PostQuitMessage(0);
+    void App::operationExit() {
+        if (_currentFile->getState() != FileStates::saved) {
+           if (_askConfirmation(L"Confirm application exit", L"You have unsaved changes to your file. Do you want to quit?")) {
+               DestroyWindow(_handles.mainWindow);
+           }
+        } else {    
+            DestroyWindow(_handles.mainWindow);
+        }
+    }
+    
+    void App::onEvent() {
+        _currentFile->setState(FileStates::modified);
+        _setWindowTitle();
     }
 
-    LRESULT CALLBACK App::WndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
+    LRESULT CALLBACK App::wndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
         switch (uMsg) {
             case WM_DESTROY:
                 PostQuitMessage(0);
                 return 0;
-
+                
+            case WM_CLOSE:
+                operationExit();
+                return 0;
+                
             case WM_SIZE:
                 {
-                    if (_editor != NULL) {
+                    if (_editor != nullptr) {
                         RECT rcClient;
 
                         GetClientRect(hwnd, &rcClient);
-                        _editor->SetPosition(0, 0, rcClient.right, rcClient.bottom);
+                        _editor->setPosition(0, 0, rcClient.right, rcClient.bottom);
                     }
                 }
                 return 0;
@@ -122,61 +166,61 @@ namespace tower {
                 {
                     switch(LOWORD(wParam)) {
                         case ControlIds::newFileMenuItem:
-                            OperationNewFile();
+                            operationNewFile();
                             break;
 
                         case ControlIds::openFileMenuItem:
-                            OperationOpenFile();
+                            operationOpenFile();
                             break;
 
                         case ControlIds::saveFileMenuItem:
-                            OperationSaveFile();
+                            operationSaveFile();
                             break;
 
                         case ControlIds::saveFileAsMenuItem:
-                            OperationSaveFileAs();
+                            operationSaveFileAs();
                             break;
 
                         case ControlIds::exitMenuItem:
-                            OperationExit();
+                            operationExit();
                             break;
                     }
                 }
 
             case WM_CTLCOLOREDIT:
                 {
-                    HDC hdc = (HDC)wParam;
+                    HDC hdc = reinterpret_cast<HDC>(wParam);
                     SetBkColor(hdc, RGB(10, 10, 10));
                     SetTextColor(hdc, RGB(200, 200, 200));
 
                     HBRUSH hBrush = CreateSolidBrush(RGB(10, 10, 10));
 
-                    return (LRESULT)hBrush;
+                    return reinterpret_cast<LRESULT>(hBrush);
                 }
         }
 
         return DefWindowProc(hwnd, uMsg, wParam, lParam);
     }
 
-    LRESULT CALLBACK App::TrueWndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
-        App* app = NULL;
+    LRESULT CALLBACK App::trueWndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
+        App* app = nullptr;
         
         if (uMsg == WM_NCCREATE) {
-            CREATESTRUCT* pCreate = (CREATESTRUCT*) lParam;
-            app = (App*) pCreate->lpCreateParams;
-            SetWindowLongPtr(hwnd, GWLP_USERDATA, (LONG_PTR) app);
+            CREATESTRUCT* pCreate = reinterpret_cast<CREATESTRUCT*>(lParam);
+            app = reinterpret_cast<App*>(pCreate->lpCreateParams);
+            SetWindowLongPtr(hwnd, GWLP_USERDATA, reinterpret_cast<LONG_PTR>(app));
         } else {
-            app = (App*) GetWindowLongPtr(hwnd, GWLP_USERDATA);
+            app = reinterpret_cast<App*>(GetWindowLongPtr(hwnd, GWLP_USERDATA));
         }
 
         if (app) {
-            return app->WndProc(hwnd, uMsg, wParam, lParam);
+            return app->wndProc(hwnd, uMsg, wParam, lParam);
         }
 
         return DefWindowProc(hwnd, uMsg, wParam, lParam);
     }
     
-    void App::_CreateMenu() {
+    void App::_createMenu() {
         _handles.menuBar = CreateMenu();
         _handles.fileMenu = CreateMenu();
 
@@ -186,20 +230,21 @@ namespace tower {
         AppendMenu(_handles.fileMenu, MF_STRING, ControlIds::saveFileAsMenuItem, L"Save As...");
         AppendMenu(_handles.fileMenu, MF_MENUBREAK, 0, 0);
         AppendMenu(_handles.fileMenu, MF_STRING, ControlIds::exitMenuItem, L"Exit\tAlt+F4");
-        AppendMenu(_handles.menuBar, MF_POPUP, (UINT_PTR)_handles.fileMenu, L"File");
+        AppendMenu(_handles.menuBar, MF_POPUP, reinterpret_cast<UINT_PTR>(_handles.fileMenu), L"File");
         
         SetMenu(_handles.mainWindow, _handles.menuBar);    
     }
 
-    void App::_CreateEditor() {
+    void App::_createEditor() {
         // Create editor
         std::ifstream cstream("c:\\dev\\projects\\tower\\tower.json");
         nlohmann::json config = nlohmann::json::parse(cstream);
 
-        _editor = new Editor(_handles.mainWindow, _hInstance, config["editor"]["fontSize"]);   
+        _editor = new Editor(_handles.mainWindow, _hInstance, config["editor"]["fontSize"]);
+        _editor->addEventListener(this);
     }
 
-    void App::_CreateAccelerators() {
+    void App::_createAccelerators() {
         ACCEL* acc = new ACCEL[3];
         
         acc[0].fVirt = FVIRTKEY | FCONTROL;
@@ -215,55 +260,24 @@ namespace tower {
         _handles.acceleratorTable = CreateAcceleratorTable(acc, 3);
     }
 
-    void App::_ReadCurrentFile() {
-        std::wifstream file(_currentFileName.c_str());
-
-        if (!file.is_open()) {
-            return;
-        }
-
-        std::wstringstream buffer;
-        std::wstring line;
-
-        while (std::getline(file, line)) {
-            buffer << line << L"\r\n";
-        }
-
-        _editor->SetText(buffer.str().c_str());
+    void App::_readCurrentFile() {
+        std::wstring content = _currentFile->read();
+    
+        _editor->setText(content.c_str());
     }
 
-    void App::_WriteCurrentFile() {
-        if (_currentFileName.empty()) {
-            return;
-        }
-
-        std::wofstream file(_currentFileName.c_str());
-
-        if (!file.is_open()) {
-            return;
-        }
-
-        const int length = _editor->GetTextLength();
-        // Slow?
+    void App::_writeCurrentFile() {
+        const int length = _editor->getTextLength();
         wchar_t* text = new wchar_t[length + 1];
 
-        _editor->GetText(text, length + 1);
+        _editor->getText(text, length + 1);
 
-        for (int i = 0; i < length; i++) {
-            // ?????
-            if (text[i] == 13) {
-                continue;
-            }
-
-            file.put(text[i]);
-        }
-
-        file.close();
+        _currentFile->write(std::wstring(text));
 
         delete[] text;
     }
 
-    std::wstring App::_AskFilePath(bool mustExist) {
+    std::wstring App::_askFilePath(bool mustExist) {
         OPENFILENAME ofn;
         wchar_t szFile[260];
 
@@ -275,21 +289,19 @@ namespace tower {
         ofn.nMaxFile = sizeof(szFile);
         ofn.lpstrFilter = L"All\0*.*\0Text\0*.TXT\0";
         ofn.nFilterIndex = 1;
-        ofn.lpstrFileTitle = NULL;
+        ofn.lpstrFileTitle = nullptr;
         ofn.nMaxFileTitle = 0;
-        ofn.lpstrInitialDir = NULL;
+        ofn.lpstrInitialDir = nullptr;
 
         if (mustExist) {
             ofn.Flags = OFN_PATHMUSTEXIST | OFN_FILEMUSTEXIST;
-        } else {
-            ofn.Flags = OFN_PATHMUSTEXIST;
-        }        
 
-        if (mustExist) {
             if(GetOpenFileName(&ofn) == TRUE) {
                 return ofn.lpstrFile;
             }
         } else {
+            ofn.Flags = OFN_PATHMUSTEXIST;
+
             if(GetSaveFileName(&ofn) == TRUE) {
                 return ofn.lpstrFile;
             }
@@ -298,14 +310,24 @@ namespace tower {
         return L"";
     }
 
-    void App::_SetWindowTitle() {
+    void App::_setWindowTitle() {
         std::wstring title = L"Tower Editor";
 
-        if (!_currentFileName.empty()) {
+        if (_currentFile->getState() != FileStates::uncreated) {
             title += L" - ";
-            title += _currentFileName;
+            title += _currentFile->getFilename();
+        }
+        
+        if (_currentFile->getState() != FileStates::saved) {
+            title += L" (Unsaved)";
         }
 
         SetWindowText(_handles.mainWindow, title.c_str());
+    }
+    
+    bool App::_askConfirmation(const std::wstring& title, const std::wstring& message) {
+        int ret = MessageBox(nullptr, message.c_str(), title.c_str(), MB_ICONEXCLAMATION | MB_YESNO);
+        
+        return ret == IDYES;
     }
 }

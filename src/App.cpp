@@ -11,14 +11,13 @@
 namespace tower {
     App::App() :
         _hInstance(0),
-        _editor(nullptr),
-        _currentFile(nullptr) {
+        _editor(nullptr) {
+    
+        _currentFile = new File();
     }
 
     App::~App() {
-        if (_currentFile != nullptr) {
-            delete _currentFile;
-        }
+        delete _currentFile;
         
         if (_editor != nullptr) {
             delete _editor;
@@ -55,8 +54,6 @@ namespace tower {
         _createEditor();
         _createAccelerators();
 
-        operationNewFile();
-
         ShowWindow(_handles.mainWindow, SW_SHOWDEFAULT);
     }
 
@@ -72,6 +69,13 @@ namespace tower {
     }
 
     void App::operationNewFile() {
+        if (_currentFile->getState() != FileStates::saved &&
+            _editor->getTextLength() > 0) {
+            if (!_askNewConfirmation()) {
+                return;
+            }
+        }
+    
         _editor->clear();
 
         if (_currentFile != nullptr) {
@@ -84,6 +88,13 @@ namespace tower {
     }
 
     void App::operationOpenFile() {
+        if (_currentFile->getState() != FileStates::saved &&
+            _editor->getTextLength() > 0) {
+            if (!_askOpenConfirmation()) {
+                return;
+            }
+        }
+    
         std::wstring filename = _askFilePath(true);
 
         if (filename.empty()) {
@@ -127,8 +138,9 @@ namespace tower {
     }
 
     void App::operationExit() {
-        if (_currentFile->getState() != FileStates::saved) {
-           if (_askConfirmation(L"Confirm application exit", L"You have unsaved changes to your file. Do you want to quit?")) {
+        if (_currentFile->getState() != FileStates::saved &&
+            _editor->getTextLength() > 0) {
+           if (_askQuitConfirmation()) {
                DestroyWindow(_handles.mainWindow);
            }
         } else {    
@@ -325,9 +337,18 @@ namespace tower {
         SetWindowText(_handles.mainWindow, title.c_str());
     }
     
-    bool App::_askConfirmation(const std::wstring& title, const std::wstring& message) {
-        int ret = MessageBox(nullptr, message.c_str(), title.c_str(), MB_ICONEXCLAMATION | MB_YESNO);
-        
-        return ret == IDYES;
+    bool App::_askQuitConfirmation() {
+        return MessageBox(nullptr, L"You have unsaved changes. Do you still want to quit?", 
+                                   L"Confirm application exit", MB_ICONEXCLAMATION | MB_YESNO) == IDYES;
+    }
+    
+    bool App::_askNewConfirmation() {
+        return MessageBox(nullptr, L"You have unsaved changes. Do you still want to create a new file?", 
+                                   L"Confirm new file", MB_ICONEXCLAMATION | MB_YESNO) == IDYES;
+    }
+    
+    bool App::_askOpenConfirmation() {
+        return MessageBox(nullptr, L"You have unsaved changes. Do you still want to open a file?", 
+                                   L"Confirm open file", MB_ICONEXCLAMATION | MB_YESNO) == IDYES;
     }
 }

@@ -57,7 +57,9 @@ namespace tower {
         
         void _setWindowTitle();
         
-        bool _askConfirmation(const std::wstring& title, const std::wstring& message);
+        bool _askQuitConfirmation();
+        bool _askNewConfirmation();
+        bool _askOpenConfirmation();
 
         HINSTANCE _hInstance;
         Handles _handles;

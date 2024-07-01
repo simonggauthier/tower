@@ -54,7 +54,10 @@ namespace tower {
         void _readCurrentFile();
         void _writeCurrentFile();
         std::wstring _askFilePath(bool mustExist);
+        
         void _setWindowTitle();
+        
+        bool _askConfirmation(const std::wstring& title, const std::wstring& message);
 
         HINSTANCE _hInstance;
         Handles _handles;

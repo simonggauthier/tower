@@ -127,7 +127,13 @@ namespace tower {
     }
 
     void App::operationExit() {
-        PostQuitMessage(0);
+        if (_currentFile->getState() != FileStates::saved) {
+           if (_askConfirmation(L"Confirm application exit", L"You have unsaved changes to your file. Do you want to quit?")) {
+               DestroyWindow(_handles.mainWindow);
+           }
+        } else {    
+            DestroyWindow(_handles.mainWindow);
+        }
     }
     
     void App::onEvent() {
@@ -140,7 +146,11 @@ namespace tower {
             case WM_DESTROY:
                 PostQuitMessage(0);
                 return 0;
-
+                
+            case WM_CLOSE:
+                operationExit();
+                return 0;
+                
             case WM_SIZE:
                 {
                     if (_editor != nullptr) {
@@ -313,5 +323,11 @@ namespace tower {
         }
 
         SetWindowText(_handles.mainWindow, title.c_str());
+    }
+    
+    bool App::_askConfirmation(const std::wstring& title, const std::wstring& message) {
+        int ret = MessageBox(nullptr, message.c_str(), title.c_str(), MB_ICONEXCLAMATION | MB_YESNO);
+        
+        return ret == IDYES;
     }
 }

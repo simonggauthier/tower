@@ -6,6 +6,8 @@
 
 #include "Editor.h"
 #include "EditorContainer.h"
+#include "File.h"
+#include "EventListener.h"
 
 namespace tower {
     struct Handles {
@@ -23,7 +25,7 @@ namespace tower {
         exitMenuItem = 105
     };
 
-    class App : public EditorContainer {
+    class App : public EditorContainer, public EventListener {
     public:
         App();
         ~App();
@@ -38,6 +40,8 @@ namespace tower {
         void operationExit();
 
         Editor* getEditor() { return _editor; }
+        
+        void onEvent();
 
         LRESULT CALLBACK wndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
         static LRESULT CALLBACK trueWndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
@@ -56,7 +60,6 @@ namespace tower {
         Handles _handles;
         
         Editor* _editor;
-
-        std::wstring _currentFileName;
+        File* _currentFile;
     };
 }

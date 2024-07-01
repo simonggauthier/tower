@@ -3,20 +3,21 @@
 #include <string>
 
 namespace tower {
-    enum FileStates {saved, dirty};
+    enum FileStates {uncreated, saved, modified};
 
     class File {
     public:
         File();
         File(const std::wstring& filename);
-        ~File();
         
-        std::wstring Read() const;
-        void Write(const std::wstring& content);
+        std::wstring read();
+        void write(const std::wstring& content);
         
-        std::wstring GetFilename() const { return _filename; };
-        FileStates GetState() const { return _state; }
-        void SetState(FileStates state) { _state = state; }
+        std::wstring getFilename() const { return _filename; };
+        void setFilename(const std::wstring& filename, FileStates state) { _filename = filename; _state = state; }
+        
+        FileStates getState() const { return _state; }
+        void setState(FileStates state) { _state = state; }
         
     private:
         std::wstring _filename;

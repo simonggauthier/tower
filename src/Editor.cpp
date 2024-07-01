@@ -1,6 +1,7 @@
 #include <Windows.h>
 
 #include <string>
+#include <iostream>
 
 #include "Editor.h"
 #include "EditorContainer.h"
@@ -14,7 +15,7 @@ namespace tower {
             WS_BORDER | WS_CHILD | WS_VISIBLE | WS_VSCROLL | ES_LEFT |  ES_MULTILINE | ES_AUTOVSCROLL,
             10, 50, 400, 400,
             parentHwnd,
-            NULL,
+            nullptr,
             hInstance,
             this
         );
@@ -31,7 +32,7 @@ namespace tower {
     }
 
     void Editor::setPosition(int x, int y, int width, int height) {
-        SetWindowPos(_hwnd, NULL, x, y, width, height, SWP_NOZORDER);
+        SetWindowPos(_hwnd, nullptr, x, y, width, height, SWP_NOZORDER);
     }
 
     int Editor::getTextLength() const {
@@ -64,7 +65,7 @@ namespace tower {
 
     LRESULT CALLBACK Editor::wndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
         switch (uMsg) {
-            case WM_CHAR:
+            case WM_CHAR: {
                 if (wParam == VK_TAB) {
                     SendMessage(hwnd, EM_REPLACESEL, TRUE, reinterpret_cast<LPARAM>(L"    "));
                     return 0;
@@ -77,6 +78,12 @@ namespace tower {
 
                     return 0;
                 }
+            }
+            
+            case EN_CHANGE:
+                _broadcastEvent();
+                
+                break;
         }
         
         return CallWindowProc(_originalWndProc, hwnd, uMsg, wParam, lParam);
@@ -91,6 +98,12 @@ namespace tower {
         }
         
         return 0;
+    }
+    
+    void Editor::_broadcastEvent() const {
+        for(auto listener : _eventListeners) {
+            listener->onEvent();
+        }
     }
 
     int Editor::_countSpacesAtStartOfLine() const {

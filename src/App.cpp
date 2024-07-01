@@ -12,10 +12,14 @@ namespace tower {
     App::App() :
         _hInstance(0),
         _editor(nullptr),
-        _currentFileName(L"") {
+        _currentFile(nullptr) {
     }
 
     App::~App() {
+        if (_currentFile != nullptr) {
+            delete _currentFile;
+        }
+        
         if (_editor != nullptr) {
             delete _editor;
         }
@@ -30,7 +34,7 @@ namespace tower {
         wc.lpfnWndProc = App::trueWndProc;
         wc.hInstance = hInstance;
         wc.lpszClassName = CLASS_NAME;
-        wc.hCursor = LoadCursor(NULL, IDC_ARROW);
+        wc.hCursor = LoadCursor(nullptr, IDC_ARROW);
 
         RegisterClass(&wc);
 
@@ -41,8 +45,8 @@ namespace tower {
             WS_OVERLAPPEDWINDOW,            // Window style
             // Size and position
             CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT,
-            NULL,       // Parent window    
-            NULL,       // Menu
+            nullptr,       // Parent window    
+            nullptr,       // Menu
             hInstance,  // Instance handle
             this        // Additional application data
         );
@@ -51,13 +55,15 @@ namespace tower {
         _createEditor();
         _createAccelerators();
 
+        operationNewFile();
+
         ShowWindow(_handles.mainWindow, SW_SHOWDEFAULT);
     }
 
     void App::eventLoop() {
         MSG msg = { };
 
-        while (GetMessage(&msg, NULL, 0, 0) > 0) {
+        while (GetMessage(&msg, nullptr, 0, 0) > 0) {
             if (!TranslateAccelerator(_handles.mainWindow, _handles.acceleratorTable, &msg)) {
                 TranslateMessage(&msg);
                 DispatchMessage(&msg);
@@ -68,40 +74,53 @@ namespace tower {
     void App::operationNewFile() {
         _editor->clear();
 
-        _currentFileName = L"";
+        if (_currentFile != nullptr) {
+            delete _currentFile;
+        }
+
+        _currentFile = new File();
 
         _setWindowTitle();
     }
 
     void App::operationOpenFile() {
-        std::wstring filePath = _askFilePath(true);
+        std::wstring filename = _askFilePath(true);
 
-        if (filePath.empty()) {
+        if (filename.empty()) {
             return;
         }
 
-        _currentFileName = filePath;
+        if (_currentFile != nullptr) {
+            delete _currentFile;
+        }
+
+        _currentFile = new File(filename);
 
         _readCurrentFile();
         _setWindowTitle();
     }
 
     void App::operationSaveFile() {
-        if (_currentFileName.empty()) {
+        if (_currentFile->getState() == FileStates::uncreated) {
             operationSaveFileAs();
         } else {
             _writeCurrentFile();
+            _setWindowTitle();
         }
     }
 
     void App::operationSaveFileAs() {
-        std::wstring filePath = _askFilePath(false);
+        std::wstring filename = _askFilePath(false);
 
-        if (filePath.empty()) {
+        if (filename.empty()) {
             return;
         }
 
-        _currentFileName = filePath;
+        if (_currentFile != nullptr) {
+            delete _currentFile;
+        }
+
+        _currentFile = new File(filename);
 
         _writeCurrentFile();
         _setWindowTitle();
@@ -109,6 +128,11 @@ namespace tower {
 
     void App::operationExit() {
         PostQuitMessage(0);
+    }
+    
+    void App::onEvent() {
+        _currentFile->setState(FileStates::modified);
+        _setWindowTitle();
     }
 
     LRESULT CALLBACK App::wndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
@@ -119,7 +143,7 @@ namespace tower {
 
             case WM_SIZE:
                 {
-                    if (_editor != NULL) {
+                    if (_editor != nullptr) {
                         RECT rcClient;
 
                         GetClientRect(hwnd, &rcClient);
@@ -169,7 +193,7 @@ namespace tower {
     }
 
     LRESULT CALLBACK App::trueWndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
-        App* app = NULL;
+        App* app = nullptr;
         
         if (uMsg == WM_NCCREATE) {
             CREATESTRUCT* pCreate = reinterpret_cast<CREATESTRUCT*>(lParam);
@@ -206,7 +230,8 @@ namespace tower {
         std::ifstream cstream("c:\\dev\\projects\\tower\\tower.json");
         nlohmann::json config = nlohmann::json::parse(cstream);
 
-        _editor = new Editor(_handles.mainWindow, _hInstance, config["editor"]["fontSize"]);   
+        _editor = new Editor(_handles.mainWindow, _hInstance, config["editor"]["fontSize"]);
+        _editor->addEventListener(this);
     }
 
     void App::_createAccelerators() {
@@ -226,48 +251,18 @@ namespace tower {
     }
 
     void App::_readCurrentFile() {
-        std::wifstream file(_currentFileName.c_str());
-
-        if (!file.is_open()) {
-            return;
-        }
-
-        std::wstringstream buffer;
-        std::wstring line;
-
-        while (std::getline(file, line)) {
-            buffer << line << L"\r\n";
-        }
-
-        _editor->setText(buffer.str().c_str());
+        std::wstring content = _currentFile->read();
+    
+        _editor->setText(content.c_str());
     }
 
     void App::_writeCurrentFile() {
-        if (_currentFileName.empty()) {
-            return;
-        }
-
-        std::wofstream file(_currentFileName.c_str());
-
-        if (!file.is_open()) {
-            return;
-        }
-
         const int length = _editor->getTextLength();
         wchar_t* text = new wchar_t[length + 1];
 
         _editor->getText(text, length + 1);
 
-        for (int i = 0; i < length; i++) {
-            // ?????
-            if (text[i] == 13) {
-                continue;
-            }
-
-            file.put(text[i]);
-        }
-
-        file.close();
+        _currentFile->write(std::wstring(text));
 
         delete[] text;
     }
@@ -284,9 +279,9 @@ namespace tower {
         ofn.nMaxFile = sizeof(szFile);
         ofn.lpstrFilter = L"All\0*.*\0Text\0*.TXT\0";
         ofn.nFilterIndex = 1;
-        ofn.lpstrFileTitle = NULL;
+        ofn.lpstrFileTitle = nullptr;
         ofn.nMaxFileTitle = 0;
-        ofn.lpstrInitialDir = NULL;
+        ofn.lpstrInitialDir = nullptr;
 
         if (mustExist) {
             ofn.Flags = OFN_PATHMUSTEXIST | OFN_FILEMUSTEXIST;
@@ -308,9 +303,13 @@ namespace tower {
     void App::_setWindowTitle() {
         std::wstring title = L"Tower Editor";
 
-        if (!_currentFileName.empty()) {
+        if (_currentFile->getState() != FileStates::uncreated) {
             title += L" - ";
-            title += _currentFileName;
+            title += _currentFile->getFilename();
+        }
+        
+        if (_currentFile->getState() != FileStates::saved) {
+            title += L" (Unsaved)";
         }
 
         SetWindowText(_handles.mainWindow, title.c_str());

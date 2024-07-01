@@ -5,10 +5,6 @@
 namespace tower {
     class EditorContainer {
     public:
-        EditorContainer() = default;
-
-        virtual ~EditorContainer() {}
-
-        virtual Editor* GetEditor() = 0;
+        virtual Editor* getEditor() = 0;
     };
 }

@@ -1,3 +1,7 @@
+#include <Windows.h>
+
+#include <string>
+
 #include "Editor.h"
 #include "EditorContainer.h"
 
@@ -18,7 +22,7 @@ namespace tower {
         _font = CreateFont(fontSize, 0, 0, 0, FW_DONTCARE, FALSE, FALSE, FALSE, DEFAULT_CHARSET, OUT_TT_PRECIS, CLIP_DEFAULT_PRECIS, CLEARTYPE_QUALITY, DEFAULT_PITCH | FF_DONTCARE, L"Consolas");
         SendMessage(_hwnd, WM_SETFONT, (WPARAM) _font, TRUE);
 
-        _originalWndProc = (WNDPROC) SetWindowLongPtr(_hwnd, GWLP_WNDPROC, (LONG_PTR) Editor::TrueWndProc);
+        _originalWndProc = (WNDPROC) SetWindowLongPtr(_hwnd, GWLP_WNDPROC, (LONG_PTR) Editor::trueWndProc);
     }
 
     Editor::~Editor() {
@@ -26,50 +30,50 @@ namespace tower {
         DestroyWindow(_hwnd);
     }
 
-    void Editor::SetPosition(int x, int y, int width, int height) {
+    void Editor::setPosition(int x, int y, int width, int height) {
         SetWindowPos(_hwnd, NULL, x, y, width, height, SWP_NOZORDER);
     }
 
-    int Editor::GetTextLength() {
+    int Editor::getTextLength() const {
         return GetWindowTextLength(_hwnd);
     }
 
-    void Editor::GetText(wchar_t* buffer, int length) {
+    void Editor::getText(wchar_t* buffer, int length) const {
         GetWindowText(_hwnd, buffer, length);
     }
 
-    void Editor::SetText(const wchar_t* text) {
+    void Editor::setText(const wchar_t* text) {
         SetWindowText(_hwnd, text);
     }
 
-    void Editor::Clear() {
+    void Editor::clear() {
         SetWindowText(_hwnd, L"");
     }
 
-    int Editor::GetCurrentLineIndex() {
+    int Editor::getCurrentLineIndex() const {
         return SendMessage(_hwnd, EM_LINEFROMCHAR, -1, 0);
     }
 
-    void Editor::GetLine(int index, wchar_t* buffer, int length) {
+    void Editor::getLine(int index, wchar_t* buffer, int length) const {
         DWORD dLength = length;
 
         memcpy(buffer, &dLength, sizeof(DWORD));
-        int copied = SendMessage(_hwnd, EM_GETLINE, index, (LPARAM) buffer);
+        int copied = SendMessage(_hwnd, EM_GETLINE, index, reinterpret_cast<LPARAM>(buffer));
         buffer[copied] = '\0';
     }
 
-    LRESULT CALLBACK Editor::WndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
+    LRESULT CALLBACK Editor::wndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
         switch (uMsg) {
             case WM_CHAR:
                 if (wParam == VK_TAB) {
-                    SendMessage(hwnd, EM_REPLACESEL, TRUE, (LPARAM)L"    ");
+                    SendMessage(hwnd, EM_REPLACESEL, TRUE, reinterpret_cast<LPARAM>(L"    "));
                     return 0;
                 } else if (wParam == VK_RETURN) {                    
-                    int spaceCount = _CountSpacesAtStartOfLine();
+                    int spaceCount = _countSpacesAtStartOfLine();
                     std::wstring spaces(spaceCount, L' ');
 
-                    SendMessage(hwnd, EM_REPLACESEL, FALSE, (LPARAM) L"\r\n");
-                    SendMessage(hwnd, EM_REPLACESEL, FALSE, (LPARAM) spaces.c_str());
+                    SendMessage(hwnd, EM_REPLACESEL, FALSE, reinterpret_cast<LPARAM>(L"\r\n"));
+                    SendMessage(hwnd, EM_REPLACESEL, FALSE, reinterpret_cast<LPARAM>(spaces.c_str()));
 
                     return 0;
                 }
@@ -78,23 +82,23 @@ namespace tower {
         return CallWindowProc(_originalWndProc, hwnd, uMsg, wParam, lParam);
     }
 
-    LRESULT CALLBACK Editor::TrueWndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
+    LRESULT CALLBACK Editor::trueWndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
         HWND mainWindowHwnd = GetParent(hwnd);
-        EditorContainer* app = (EditorContainer*) GetWindowLongPtr(mainWindowHwnd, GWLP_USERDATA);
+        EditorContainer* app = reinterpret_cast<EditorContainer*>(GetWindowLongPtr(mainWindowHwnd, GWLP_USERDATA));
 
         if (app) {
-            return app->GetEditor()->WndProc(hwnd, uMsg, wParam, lParam);
+            return app->getEditor()->wndProc(hwnd, uMsg, wParam, lParam);
         }
         
         return 0;
     }
 
-    int Editor::_CountSpacesAtStartOfLine() {
+    int Editor::_countSpacesAtStartOfLine() const {
         const int SIZE = 100;
         wchar_t buffer[SIZE] = {0};
         int ret = 0;
 
-        GetLine(GetCurrentLineIndex(), buffer, SIZE);
+        getLine(getCurrentLineIndex(), buffer, SIZE);
 
         for(int i = 0; i < SIZE; i++) {
             if (buffer[i] == L' ') {

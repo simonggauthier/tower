@@ -1,23 +1,33 @@
+#include <string>
+#include <sstream>
+#include <fstream>
+
+#include <Windows.h>
+
+#include "json.hpp"
+
 #include "App.h"
 
 namespace tower {
     App::App() :
         _hInstance(0),
-        _editor(0),
+        _editor(nullptr),
         _currentFileName(L"") {
     }
 
     App::~App() {
-        delete _editor;
+        if (_editor != nullptr) {
+            delete _editor;
+        }
     }
 
-    void App::CreateMainWindow(HINSTANCE hInstance) {
+    void App::createMainWindow(HINSTANCE hInstance) {
         const wchar_t CLASS_NAME[]  = L"Tower Window Class";
         
         _hInstance = hInstance;
 
         WNDCLASS wc = { };
-        wc.lpfnWndProc = App::TrueWndProc;
+        wc.lpfnWndProc = App::trueWndProc;
         wc.hInstance = hInstance;
         wc.lpszClassName = CLASS_NAME;
         wc.hCursor = LoadCursor(NULL, IDC_ARROW);
@@ -37,14 +47,14 @@ namespace tower {
             this        // Additional application data
         );
 
-        _CreateMenu();
-        _CreateEditor();
-        _CreateAccelerators();
+        _createMenu();
+        _createEditor();
+        _createAccelerators();
 
         ShowWindow(_handles.mainWindow, SW_SHOWDEFAULT);
     }
 
-    void App::EventLoop() {
+    void App::eventLoop() {
         MSG msg = { };
 
         while (GetMessage(&msg, NULL, 0, 0) > 0) {
@@ -55,16 +65,16 @@ namespace tower {
         }
     }
 
-    void App::OperationNewFile() {
-        _editor->Clear();
+    void App::operationNewFile() {
+        _editor->clear();
 
         _currentFileName = L"";
 
-        _SetWindowTitle();
+        _setWindowTitle();
     }
 
-    void App::OperationOpenFile() {
-        std::wstring filePath = _AskFilePath(true);
+    void App::operationOpenFile() {
+        std::wstring filePath = _askFilePath(true);
 
         if (filePath.empty()) {
             return;
@@ -72,20 +82,20 @@ namespace tower {
 
         _currentFileName = filePath;
 
-        _ReadCurrentFile();
-        _SetWindowTitle();
+        _readCurrentFile();
+        _setWindowTitle();
     }
 
-    void App::OperationSaveFile() {
+    void App::operationSaveFile() {
         if (_currentFileName.empty()) {
-            OperationSaveFileAs();
+            operationSaveFileAs();
         } else {
-            _WriteCurrentFile();
+            _writeCurrentFile();
         }
     }
 
-    void App::OperationSaveFileAs() {
-        std::wstring filePath = _AskFilePath(false);
+    void App::operationSaveFileAs() {
+        std::wstring filePath = _askFilePath(false);
 
         if (filePath.empty()) {
             return;
@@ -93,15 +103,15 @@ namespace tower {
 
         _currentFileName = filePath;
 
-        _WriteCurrentFile();
-        _SetWindowTitle();
+        _writeCurrentFile();
+        _setWindowTitle();
     }
 
-    void App::OperationExit() {
+    void App::operationExit() {
         PostQuitMessage(0);
     }
 
-    LRESULT CALLBACK App::WndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
+    LRESULT CALLBACK App::wndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
         switch (uMsg) {
             case WM_DESTROY:
                 PostQuitMessage(0);
@@ -113,7 +123,7 @@ namespace tower {
                         RECT rcClient;
 
                         GetClientRect(hwnd, &rcClient);
-                        _editor->SetPosition(0, 0, rcClient.right, rcClient.bottom);
+                        _editor->setPosition(0, 0, rcClient.right, rcClient.bottom);
                     }
                 }
                 return 0;
@@ -122,61 +132,61 @@ namespace tower {
                 {
                     switch(LOWORD(wParam)) {
                         case ControlIds::newFileMenuItem:
-                            OperationNewFile();
+                            operationNewFile();
                             break;
 
                         case ControlIds::openFileMenuItem:
-                            OperationOpenFile();
+                            operationOpenFile();
                             break;
 
                         case ControlIds::saveFileMenuItem:
-                            OperationSaveFile();
+                            operationSaveFile();
                             break;
 
                         case ControlIds::saveFileAsMenuItem:
-                            OperationSaveFileAs();
+                            operationSaveFileAs();
                             break;
 
                         case ControlIds::exitMenuItem:
-                            OperationExit();
+                            operationExit();
                             break;
                     }
                 }
 
             case WM_CTLCOLOREDIT:
                 {
-                    HDC hdc = (HDC)wParam;
+                    HDC hdc = reinterpret_cast<HDC>(wParam);
                     SetBkColor(hdc, RGB(10, 10, 10));
                     SetTextColor(hdc, RGB(200, 200, 200));
 
                     HBRUSH hBrush = CreateSolidBrush(RGB(10, 10, 10));
 
-                    return (LRESULT)hBrush;
+                    return reinterpret_cast<LRESULT>(hBrush);
                 }
         }
 
         return DefWindowProc(hwnd, uMsg, wParam, lParam);
     }
 
-    LRESULT CALLBACK App::TrueWndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
+    LRESULT CALLBACK App::trueWndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
         App* app = NULL;
         
         if (uMsg == WM_NCCREATE) {
-            CREATESTRUCT* pCreate = (CREATESTRUCT*) lParam;
-            app = (App*) pCreate->lpCreateParams;
-            SetWindowLongPtr(hwnd, GWLP_USERDATA, (LONG_PTR) app);
+            CREATESTRUCT* pCreate = reinterpret_cast<CREATESTRUCT*>(lParam);
+            app = reinterpret_cast<App*>(pCreate->lpCreateParams);
+            SetWindowLongPtr(hwnd, GWLP_USERDATA, reinterpret_cast<LONG_PTR>(app));
         } else {
-            app = (App*) GetWindowLongPtr(hwnd, GWLP_USERDATA);
+            app = reinterpret_cast<App*>(GetWindowLongPtr(hwnd, GWLP_USERDATA));
         }
 
         if (app) {
-            return app->WndProc(hwnd, uMsg, wParam, lParam);
+            return app->wndProc(hwnd, uMsg, wParam, lParam);
         }
 
         return DefWindowProc(hwnd, uMsg, wParam, lParam);
     }
     
-    void App::_CreateMenu() {
+    void App::_createMenu() {
         _handles.menuBar = CreateMenu();
         _handles.fileMenu = CreateMenu();
 
@@ -186,12 +196,12 @@ namespace tower {
         AppendMenu(_handles.fileMenu, MF_STRING, ControlIds::saveFileAsMenuItem, L"Save As...");
         AppendMenu(_handles.fileMenu, MF_MENUBREAK, 0, 0);
         AppendMenu(_handles.fileMenu, MF_STRING, ControlIds::exitMenuItem, L"Exit\tAlt+F4");
-        AppendMenu(_handles.menuBar, MF_POPUP, (UINT_PTR)_handles.fileMenu, L"File");
+        AppendMenu(_handles.menuBar, MF_POPUP, reinterpret_cast<UINT_PTR>(_handles.fileMenu), L"File");
         
         SetMenu(_handles.mainWindow, _handles.menuBar);    
     }
 
-    void App::_CreateEditor() {
+    void App::_createEditor() {
         // Create editor
         std::ifstream cstream("c:\\dev\\projects\\tower\\tower.json");
         nlohmann::json config = nlohmann::json::parse(cstream);
@@ -199,7 +209,7 @@ namespace tower {
         _editor = new Editor(_handles.mainWindow, _hInstance, config["editor"]["fontSize"]);   
     }
 
-    void App::_CreateAccelerators() {
+    void App::_createAccelerators() {
         ACCEL* acc = new ACCEL[3];
         
         acc[0].fVirt = FVIRTKEY | FCONTROL;
@@ -215,7 +225,7 @@ namespace tower {
         _handles.acceleratorTable = CreateAcceleratorTable(acc, 3);
     }
 
-    void App::_ReadCurrentFile() {
+    void App::_readCurrentFile() {
         std::wifstream file(_currentFileName.c_str());
 
         if (!file.is_open()) {
@@ -229,10 +239,10 @@ namespace tower {
             buffer << line << L"\r\n";
         }
 
-        _editor->SetText(buffer.str().c_str());
+        _editor->setText(buffer.str().c_str());
     }
 
-    void App::_WriteCurrentFile() {
+    void App::_writeCurrentFile() {
         if (_currentFileName.empty()) {
             return;
         }
@@ -243,11 +253,10 @@ namespace tower {
             return;
         }
 
-        const int length = _editor->GetTextLength();
-        // Slow?
+        const int length = _editor->getTextLength();
         wchar_t* text = new wchar_t[length + 1];
 
-        _editor->GetText(text, length + 1);
+        _editor->getText(text, length + 1);
 
         for (int i = 0; i < length; i++) {
             // ?????
@@ -263,7 +272,7 @@ namespace tower {
         delete[] text;
     }
 
-    std::wstring App::_AskFilePath(bool mustExist) {
+    std::wstring App::_askFilePath(bool mustExist) {
         OPENFILENAME ofn;
         wchar_t szFile[260];
 
@@ -281,15 +290,13 @@ namespace tower {
 
         if (mustExist) {
             ofn.Flags = OFN_PATHMUSTEXIST | OFN_FILEMUSTEXIST;
-        } else {
-            ofn.Flags = OFN_PATHMUSTEXIST;
-        }        
 
-        if (mustExist) {
             if(GetOpenFileName(&ofn) == TRUE) {
                 return ofn.lpstrFile;
             }
         } else {
+            ofn.Flags = OFN_PATHMUSTEXIST;
+
             if(GetSaveFileName(&ofn) == TRUE) {
                 return ofn.lpstrFile;
             }
@@ -298,7 +305,7 @@ namespace tower {
         return L"";
     }
 
-    void App::_SetWindowTitle() {
+    void App::_setWindowTitle() {
         std::wstring title = L"Tower Editor";
 
         if (!_currentFileName.empty()) {

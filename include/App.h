@@ -14,6 +14,7 @@ namespace tower {
         HWND mainWindow;
         HMENU menuBar;
         HMENU fileMenu;
+        HMENU findMenu;
         HACCEL acceleratorTable;
     };
 
@@ -22,7 +23,8 @@ namespace tower {
         openFileMenuItem = 102,
         saveFileMenuItem = 103,
         saveFileAsMenuItem = 104,
-        exitMenuItem = 105
+        exitMenuItem = 105,
+        findMenuItem = 106
     };
 
     class App : public EditorContainer, public EventListener {

@@ -1,5 +1,8 @@
-- File state display (status bar?) + warnings
+- File state display + warnings (DONE)
+- Search
+- Edit menu
 - Tabs
 - File list
+- Status bar
 - Text formatting
 - Tests

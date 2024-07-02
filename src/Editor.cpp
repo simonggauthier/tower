@@ -70,16 +70,22 @@ namespace tower {
                     SendMessage(hwnd, EM_REPLACESEL, TRUE, reinterpret_cast<LPARAM>(L"    "));
                     return 0;
                 } else if (wParam == VK_RETURN) {                    
-                    int spaceCount = _countSpacesAtStartOfLine();
-                    std::wstring spaces(spaceCount, L' ');
-
+                    EditorLineInfo lineInfo = _getCurrentLineInfo();
+                    
                     SendMessage(hwnd, EM_REPLACESEL, FALSE, reinterpret_cast<LPARAM>(L"\r\n"));
-                    SendMessage(hwnd, EM_REPLACESEL, FALSE, reinterpret_cast<LPARAM>(spaces.c_str()));
+                    
+                    std::wcout << lineInfo.spacesAtStart << L" " << lineInfo.totalChars << std::endl;
+                    
+                    if (!lineInfo.hasOnlySpaces()) {
+                        std::wstring spaces(lineInfo.spacesAtStart, L' ');
+                        
+                        SendMessage(hwnd, EM_REPLACESEL, FALSE, reinterpret_cast<LPARAM>(spaces.c_str()));
+                    }
 
                     return 0;
                 }
             }
-            
+
             case EN_CHANGE:
                 _broadcastEvent();
                 
@@ -106,19 +112,27 @@ namespace tower {
         }
     }
 
-    int Editor::_countSpacesAtStartOfLine() const {
+    EditorLineInfo Editor::_getCurrentLineInfo() const {
         const int SIZE = 100;
         wchar_t buffer[SIZE] = {0};
-        int ret = 0;
+        EditorLineInfo ret;
 
         getLine(getCurrentLineIndex(), buffer, SIZE);
-
+        
+        bool stillSpaces = true;
+        
         for(int i = 0; i < SIZE; i++) {
             if (buffer[i] == L' ') {
-                ret++;
-            } else {
+                if (stillSpaces) {
+                    ret.spacesAtStart++;
+                }
+            } else if (buffer[i] == '\0') {
                 break;
+            } else if (stillSpaces) {
+                stillSpaces = false;
             }
+ 
+            ret.totalChars++;
         }
 
         return ret;

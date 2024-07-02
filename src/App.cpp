@@ -78,10 +78,7 @@ namespace tower {
     
         _editor->clear();
 
-        if (_currentFile != nullptr) {
-            delete _currentFile;
-        }
-
+        delete _currentFile;
         _currentFile = new File();
 
         _setWindowTitle();
@@ -101,10 +98,7 @@ namespace tower {
             return;
         }
 
-        if (_currentFile != nullptr) {
-            delete _currentFile;
-        }
-
+        delete _currentFile;
         _currentFile = new File(filename);
 
         _readCurrentFile();
@@ -127,10 +121,7 @@ namespace tower {
             return;
         }
 
-        if (_currentFile != nullptr) {
-            delete _currentFile;
-        }
-
+        delete _currentFile;
         _currentFile = new File(filename);
 
         _writeCurrentFile();
@@ -147,7 +138,7 @@ namespace tower {
             DestroyWindow(_handles.mainWindow);
         }
     }
-    
+
     void App::onEvent() {
         _currentFile->setState(FileStates::modified);
         _setWindowTitle();
@@ -231,11 +222,11 @@ namespace tower {
 
         return DefWindowProc(hwnd, uMsg, wParam, lParam);
     }
-    
+
     void App::_createMenu() {
         _handles.menuBar = CreateMenu();
+        
         _handles.fileMenu = CreateMenu();
-
         AppendMenu(_handles.fileMenu, MF_STRING, ControlIds::newFileMenuItem, L"New\tCtrl+N");
         AppendMenu(_handles.fileMenu, MF_STRING, ControlIds::openFileMenuItem, L"Open...\tCtrl+O");
         AppendMenu(_handles.fileMenu, MF_STRING, ControlIds::saveFileMenuItem, L"Save\tCtrl+S");
@@ -243,6 +234,10 @@ namespace tower {
         AppendMenu(_handles.fileMenu, MF_MENUBREAK, 0, 0);
         AppendMenu(_handles.fileMenu, MF_STRING, ControlIds::exitMenuItem, L"Exit\tAlt+F4");
         AppendMenu(_handles.menuBar, MF_POPUP, reinterpret_cast<UINT_PTR>(_handles.fileMenu), L"File");
+        
+        _handles.findMenu = CreateMenu();
+        AppendMenu(_handles.findMenu, MF_STRING, ControlIds::findMenuItem, L"Find...\tCtrl+F");
+        AppendMenu(_handles.menuBar, MF_POPUP, reinterpret_cast<UINT_PTR>(_handles.findMenu), L"Search");
         
         SetMenu(_handles.mainWindow, _handles.menuBar);    
     }

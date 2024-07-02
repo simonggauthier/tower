@@ -3,7 +3,7 @@
 #include <string>
 
 namespace tower {
-    enum FileStates {uncreated, saved, modified};
+    enum FileStates { uncreated, saved, modified };
 
     class File {
     public:

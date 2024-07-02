@@ -7,6 +7,19 @@
 #include "EventListener.h"
 
 namespace tower {
+    struct EditorLineInfo {
+        int spacesAtStart;
+        int totalChars;
+
+        EditorLineInfo() :
+            spacesAtStart(0),
+            totalChars(0) {
+
+        }
+        
+        bool hasOnlySpaces() { return spacesAtStart == totalChars; }
+    };
+
     class Editor {
     public:
         Editor(HWND parentHwnd, HINSTANCE hInstance, int fontSize);
@@ -32,7 +45,7 @@ namespace tower {
     private:
         void _broadcastEvent() const;
         
-        int _countSpacesAtStartOfLine() const;
+        EditorLineInfo _getCurrentLineInfo() const;
         
         std::vector<EventListener*> _eventListeners;
 

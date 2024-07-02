@@ -1,4 +1,5 @@
 - File state display + warnings (DONE)
+- Command palette
 - Search
 - Edit menu
 - Tabs

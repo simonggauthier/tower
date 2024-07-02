@@ -73,14 +73,12 @@ namespace tower {
                     EditorLineInfo lineInfo = _getCurrentLineInfo();
                     
                     SendMessage(hwnd, EM_REPLACESEL, FALSE, reinterpret_cast<LPARAM>(L"\r\n"));
-                    
-                    std::wcout << lineInfo.spacesAtStart << L" " << lineInfo.totalChars << std::endl;
-                    
-                    if (!lineInfo.hasOnlySpaces()) {
+
+                    // if (!lineInfo.hasOnlySpaces()) {
                         std::wstring spaces(lineInfo.spacesAtStart, L' ');
                         
                         SendMessage(hwnd, EM_REPLACESEL, FALSE, reinterpret_cast<LPARAM>(spaces.c_str()));
-                    }
+                    // }
 
                     return 0;
                 }
@@ -131,7 +129,7 @@ namespace tower {
             } else if (stillSpaces) {
                 stillSpaces = false;
             }
- 
+
             ret.totalChars++;
         }
 

@@ -12,7 +12,6 @@ namespace tower {
     App::App() :
         _hInstance(0),
         _editor(nullptr) {
-    
         _currentFile = new File();
     }
 

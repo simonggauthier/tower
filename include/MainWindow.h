@@ -10,14 +10,14 @@
 #include "Event.h"
 
 namespace tower {
-    struct Handles {
+    struct MainWindowHandles {
         HWND mainWindow;
         HMENU menuBar;
         HMENU fileMenu;
         HMENU findMenu;
         HACCEL acceleratorTable;
 
-        Handles() :
+        MainWindowHandles() :
             mainWindow(nullptr),
             menuBar(nullptr),
             fileMenu(nullptr),
@@ -27,7 +27,7 @@ namespace tower {
         }
     };
 
-    enum ControlIds {
+    enum MainWindowControlIds {
         newFileMenuItem = 101,
         openFileMenuItem = 102,
         saveFileMenuItem = 103,
@@ -39,6 +39,7 @@ namespace tower {
     class MainWindow : public EditorContainer, public EventListener, public EventDispatcher {
     public:
         MainWindow(HINSTANCE hInstance);
+        virtual ~MainWindow();
         
         void mainLoop();
         
@@ -60,7 +61,7 @@ namespace tower {
         void _createAccelerators();
 
         HINSTANCE _hInstance;
-        Handles _handles;
+        MainWindowHandles _handles;
         
         Editor* _editor;
     };

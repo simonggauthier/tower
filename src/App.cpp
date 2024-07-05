@@ -17,16 +17,17 @@ namespace tower {
         _currentFile = new File();
         
         _mainWindow = new MainWindow(hInstance);
-
         _mainWindow->addEventListener(this);
+        
+        _findWindow = new FindWindow(_mainWindow->getHandle(), hInstance);
+
+        _findWindow->create();
     }
 
     App::~App() {
+        delete _findWindow;
+        delete _mainWindow;
         delete _currentFile;
-                
-        if (_mainWindow != nullptr) {
-            delete _mainWindow;
-        }
     }
 
     void App::mainLoop() {
@@ -37,7 +38,10 @@ namespace tower {
         if (event->getName() == "exit") {
             operationExit();
         } else if (event->getName() == "changed") {
-            _currentFile->setState(FileStates::modified);
+            if (_currentFile->getState() != FileStates::uncreated) {
+                _currentFile->setState(FileStates::modified);
+            }
+            
             _setWindowTitle();
         } else if (event->getName() == "newFile") {
             operationNewFile();
@@ -47,6 +51,8 @@ namespace tower {
             operationSaveFile();
         } else if (event->getName() == "saveFileAs") {
             operationSaveFileAs();
+        } else if (event->getName() == "find") {
+            operationFind();
         }
     }
 
@@ -119,6 +125,10 @@ namespace tower {
         } else {    
             _mainWindow->destroy();
         }
+    }
+
+    void App::operationFind() {
+        _findWindow->show();
     }
 
     void App::_readCurrentFile() {

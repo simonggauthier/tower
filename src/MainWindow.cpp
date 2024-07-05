@@ -25,7 +25,7 @@ namespace tower {
             CLASS_NAME,                     // Window class
             L"Tower Editor",    // Window text
             WS_OVERLAPPEDWINDOW,            // Window style
-            // Size and position
+            // Position and size
             CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT,
             nullptr,       // Parent window    
             nullptr,       // Menu
@@ -38,6 +38,10 @@ namespace tower {
         _createAccelerators();
 
         ShowWindow(_handles.mainWindow, SW_SHOWDEFAULT);
+    }
+    
+    MainWindow::~MainWindow() {
+        delete _editor;
     }
     
     void MainWindow::mainLoop() {
@@ -90,32 +94,38 @@ namespace tower {
 
             case WM_COMMAND: {
                 switch(LOWORD(wParam)) {
-                    case ControlIds::newFileMenuItem: {
+                    case MainWindowControlIds::newFileMenuItem: {
                         Event event("newFile");
                         dispatchEvent(&event);
                         break;
                     }
 
-                    case ControlIds::openFileMenuItem: {
+                    case MainWindowControlIds::openFileMenuItem: {
                         Event event("openFile");
                         dispatchEvent(&event);
                         break;
                     }
 
-                    case ControlIds::saveFileMenuItem: {
+                    case MainWindowControlIds::saveFileMenuItem: {
                         Event event("saveFile");
                         dispatchEvent(&event);
                         break;
                     }
 
-                    case ControlIds::saveFileAsMenuItem: {
+                    case MainWindowControlIds::saveFileAsMenuItem: {
                         Event event("saveFileAs");
                         dispatchEvent(&event);
                         break;
                     }
 
-                    case ControlIds::exitMenuItem: {
+                    case MainWindowControlIds::exitMenuItem: {
                         Event event("exit");
+                        dispatchEvent(&event);
+                        break;
+                    }
+                    
+                    case MainWindowControlIds::findMenuItem: {
+                        Event event("find");
                         dispatchEvent(&event);
                         break;
                     }
@@ -159,16 +169,16 @@ namespace tower {
         _handles.menuBar = CreateMenu();
         
         _handles.fileMenu = CreateMenu();
-        AppendMenu(_handles.fileMenu, MF_STRING, ControlIds::newFileMenuItem, L"New\tCtrl+N");
-        AppendMenu(_handles.fileMenu, MF_STRING, ControlIds::openFileMenuItem, L"Open...\tCtrl+O");
-        AppendMenu(_handles.fileMenu, MF_STRING, ControlIds::saveFileMenuItem, L"Save\tCtrl+S");
-        AppendMenu(_handles.fileMenu, MF_STRING, ControlIds::saveFileAsMenuItem, L"Save As...");
+        AppendMenu(_handles.fileMenu, MF_STRING, MainWindowControlIds::newFileMenuItem, L"New\tCtrl+N");
+        AppendMenu(_handles.fileMenu, MF_STRING, MainWindowControlIds::openFileMenuItem, L"Open...\tCtrl+O");
+        AppendMenu(_handles.fileMenu, MF_STRING, MainWindowControlIds::saveFileMenuItem, L"Save\tCtrl+S");
+        AppendMenu(_handles.fileMenu, MF_STRING, MainWindowControlIds::saveFileAsMenuItem, L"Save As...");
         AppendMenu(_handles.fileMenu, MF_MENUBREAK, 0, 0);
-        AppendMenu(_handles.fileMenu, MF_STRING, ControlIds::exitMenuItem, L"Exit\tAlt+F4");
+        AppendMenu(_handles.fileMenu, MF_STRING, MainWindowControlIds::exitMenuItem, L"Exit\tAlt+F4");
         AppendMenu(_handles.menuBar, MF_POPUP, reinterpret_cast<UINT_PTR>(_handles.fileMenu), L"File");
         
         _handles.findMenu = CreateMenu();
-        AppendMenu(_handles.findMenu, MF_STRING, ControlIds::findMenuItem, L"Find...\tCtrl+F");
+        AppendMenu(_handles.findMenu, MF_STRING, MainWindowControlIds::findMenuItem, L"Find...\tCtrl+F");
         AppendMenu(_handles.menuBar, MF_POPUP, reinterpret_cast<UINT_PTR>(_handles.findMenu), L"Search");
         
         SetMenu(_handles.mainWindow, _handles.menuBar);    
@@ -184,18 +194,24 @@ namespace tower {
     }
 
     void MainWindow::_createAccelerators() {
-        ACCEL* acc = new ACCEL[3];
+        const size_t SIZE = 4;
+        ACCEL* acc = new ACCEL[SIZE];
         
         acc[0].fVirt = FVIRTKEY | FCONTROL;
         acc[0].key = 'N';
-        acc[0].cmd = ControlIds::newFileMenuItem;
+        acc[0].cmd = MainWindowControlIds::newFileMenuItem;
         acc[1].fVirt = FVIRTKEY | FCONTROL;
         acc[1].key = 'O';
-        acc[1].cmd = ControlIds::openFileMenuItem;
+        acc[1].cmd = MainWindowControlIds::openFileMenuItem;
         acc[2].fVirt = FVIRTKEY | FCONTROL;
         acc[2].key = 'S';
-        acc[2].cmd = ControlIds::saveFileMenuItem;
+        acc[2].cmd = MainWindowControlIds::saveFileMenuItem;
+        acc[3].fVirt = FVIRTKEY | FCONTROL;
+        acc[3].key = 'F';
+        acc[3].cmd = MainWindowControlIds::findMenuItem;
                
-        _handles.acceleratorTable = CreateAcceleratorTable(acc, 3);
+        _handles.acceleratorTable = CreateAcceleratorTable(acc, SIZE);
+
+        delete[] acc;
     }
 }

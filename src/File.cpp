@@ -42,7 +42,7 @@ namespace tower {
             return;
         }
 
-        for (int i = 0; i < content.length(); i++) {
+        for (size_t i = 0; i < content.length(); i++) {
             // ?????
             if (content[i] == 13) {
                 continue;

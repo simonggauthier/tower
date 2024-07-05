@@ -5,6 +5,7 @@
 #include <Windows.h>
 
 #include "MainWindow.h"
+#include "FindWindow.h"
 #include "EditorContainer.h"
 #include "EventListener.h"
 #include "Event.h"
@@ -23,6 +24,7 @@ namespace tower {
         void operationSaveFile();
         void operationSaveFileAs();
         void operationExit();
+        void operationFind();
 
         void onEvent(Event* event);
 
@@ -39,7 +41,9 @@ namespace tower {
 
         HINSTANCE _hInstance;
         
-        MainWindow* _mainWindow;
         File* _currentFile;
+        
+        MainWindow* _mainWindow;
+        FindWindow* _findWindow;
     };
 }

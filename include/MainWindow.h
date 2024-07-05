@@ -5,6 +5,9 @@
 #include <Windows.h>
 
 #include "EditorContainer.h"
+#include "EventListener.h"
+#include "EventDispatcher.h"
+#include "Event.h"
 
 namespace tower {
     struct Handles {
@@ -33,14 +36,23 @@ namespace tower {
         findMenuItem = 106
     };
 
-    class MainWindow : public EditorContainer {
+    class MainWindow : public EditorContainer, public EventListener, public EventDispatcher {
     public:
         MainWindow(HINSTANCE hInstance);
+        
+        void mainLoop();
+        
+        void destroy();
+
+        void setTitle(const std::wstring& title);
+        
+        void onEvent(Event* event);
+        
+        HWND getHandle() { return _handles.mainWindow; }
+        Editor* getEditor() { return _editor; }
 
         LRESULT CALLBACK wndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
         static LRESULT CALLBACK trueWndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
-        
-        void setTitle(const std::wstring& title);
 
     private:
         void _createMenu();
@@ -48,7 +60,8 @@ namespace tower {
         void _createAccelerators();
 
         HINSTANCE _hInstance;
-
         Handles _handles;
+        
+        Editor* _editor;
     };
 }

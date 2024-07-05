@@ -1,10 +1,11 @@
 #include <Windows.h>
 
 #include <string>
-#include <iostream>
 
 #include "Editor.h"
 #include "EditorContainer.h"
+#include "Event.h"
+#include "EventListener.h"
 
 namespace tower {
     Editor::Editor(HWND parentHwnd, HINSTANCE hInstance, int fontSize) {
@@ -68,6 +69,10 @@ namespace tower {
             case WM_CHAR: {
                 if (wParam == VK_TAB) {
                     SendMessage(hwnd, EM_REPLACESEL, TRUE, reinterpret_cast<LPARAM>(L"    "));
+                    
+                    Event event("changed");
+                    dispatchEvent(&event);
+                    
                     return 0;
                 } else if (wParam == VK_RETURN) {                    
                     EditorLineInfo lineInfo = _getCurrentLineInfo();
@@ -80,12 +85,16 @@ namespace tower {
                         SendMessage(hwnd, EM_REPLACESEL, FALSE, reinterpret_cast<LPARAM>(spaces.c_str()));
                     // }
 
+                    Event event("changed");
+                    dispatchEvent(&event);
+
                     return 0;
                 }
             }
 
             case EN_CHANGE:
-                _broadcastEvent();
+                Event event("changed");
+                dispatchEvent(&event);
                 
                 break;
         }
@@ -104,12 +113,6 @@ namespace tower {
         return 0;
     }
     
-    void Editor::_broadcastEvent() const {
-        for(auto listener : _eventListeners) {
-            listener->onEvent();
-        }
-    }
-
     EditorLineInfo Editor::_getCurrentLineInfo() const {
         const int SIZE = 100;
         wchar_t buffer[SIZE] = {0};

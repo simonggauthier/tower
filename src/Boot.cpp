@@ -1,10 +1,9 @@
 #include "App.h"
 
 int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLine, int nCmdShow) {
-    tower::App app;
+    tower::App app(hInstance);
 
-    app.createMainWindow(hInstance);
-    app.eventLoop();
+    app.mainLoop();
 
     return 0;
 }

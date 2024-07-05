@@ -1,8 +1,10 @@
 #pragma once
 
+#include "Event.h"
+
 namespace tower {
     class EventListener {
     public:
-        virtual void onEvent() = 0;
+        virtual void onEvent(Event* event) = 0;
     };
 }

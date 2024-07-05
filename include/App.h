@@ -4,19 +4,19 @@
 
 #include <Windows.h>
 
-#include "Editor.h"
+#include "MainWindow.h"
 #include "EditorContainer.h"
-#include "File.h"
 #include "EventListener.h"
+#include "Event.h"
+#include "File.h"
 
 namespace tower {
     class App : public EventListener {
     public:
-        App();
+        App(HINSTANCE hInstance);
         ~App();
 
-        void createMainWindow(HINSTANCE hInstance);
-        void eventLoop();
+        void mainLoop();
         
         void operationNewFile();
         void operationOpenFile();
@@ -24,14 +24,14 @@ namespace tower {
         void operationSaveFileAs();
         void operationExit();
 
-        Editor* getEditor() { return _editor; }
-        
-        void onEvent();
+        void onEvent(Event* event);
 
     private:
         void _readCurrentFile();
         void _writeCurrentFile();
         std::wstring _askFilePath(bool mustExist);
+        
+        void _setWindowTitle();
         
         bool _askQuitConfirmation();
         bool _askNewConfirmation();
@@ -39,7 +39,7 @@ namespace tower {
 
         HINSTANCE _hInstance;
         
-        Editor* _editor;
+        MainWindow* _mainWindow;
         File* _currentFile;
     };
 }

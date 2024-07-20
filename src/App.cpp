@@ -1,3 +1,5 @@
+#include "App.h"
+
 #include <string>
 #include <sstream>
 #include <fstream>
@@ -6,7 +8,9 @@
 
 #include "json.hpp"
 
-#include "App.h"
+#include "MainWindow.h"
+#include "Event.h"
+#include "File.h"
 
 namespace tower {
     App::App(HINSTANCE hInstance) :
@@ -18,14 +22,9 @@ namespace tower {
         
         _mainWindow = new MainWindow(hInstance);
         _mainWindow->addEventListener(this);
-        
-        _findWindow = new FindWindow(_mainWindow->getHandle(), hInstance);
-
-        _findWindow->create();
     }
 
     App::~App() {
-        delete _findWindow;
         delete _mainWindow;
         delete _currentFile;
     }
@@ -51,8 +50,6 @@ namespace tower {
             operationSaveFile();
         } else if (event->getName() == "saveFileAs") {
             operationSaveFileAs();
-        } else if (event->getName() == "find") {
-            operationFind();
         }
     }
 
@@ -125,10 +122,6 @@ namespace tower {
         } else {    
             _mainWindow->destroy();
         }
-    }
-
-    void App::operationFind() {
-        _findWindow->show();
     }
 
     void App::_readCurrentFile() {

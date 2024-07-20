@@ -2,6 +2,7 @@
 
 #include <string>
 
+#include "Wndproc.h"
 #include "Editor.h"
 #include "EditorContainer.h"
 #include "Event.h"
@@ -34,6 +35,10 @@ namespace tower {
 
     void Editor::setPosition(int x, int y, int width, int height) {
         SetWindowPos(_hwnd, nullptr, x, y, width, height, SWP_NOZORDER);
+    }
+    
+    void Editor::setSelection(int position, int length) {
+        SendMessage(_hwnd, EM_SETSEL, position, position + length);
     }
 
     int Editor::getTextLength() const {
@@ -101,17 +106,6 @@ namespace tower {
         
         return CallWindowProc(_originalWndProc, hwnd, uMsg, wParam, lParam);
     }
-
-    LRESULT CALLBACK Editor::trueWndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
-        HWND mainWindowHwnd = GetParent(hwnd);
-        EditorContainer* app = reinterpret_cast<EditorContainer*>(GetWindowLongPtr(mainWindowHwnd, GWLP_USERDATA));
-
-        if (app) {
-            return app->getEditor()->wndProc(hwnd, uMsg, wParam, lParam);
-        }
-        
-        return 0;
-    }
     
     EditorLineInfo Editor::_getCurrentLineInfo() const {
         const int SIZE = 100;
@@ -138,4 +132,6 @@ namespace tower {
 
         return ret;
     }
+    
+    TRUE_WND_PROC_CONTROL(Editor, EditorContainer, getEditor)
 }

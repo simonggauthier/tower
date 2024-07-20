@@ -6,6 +6,10 @@
 
 #include "json.hpp"
 
+#include "Wndproc.h"
+
+#include <iostream>
+
 namespace tower {
     MainWindow::MainWindow(HINSTANCE hInstance) :
         _hInstance(hInstance),
@@ -35,12 +39,14 @@ namespace tower {
 
         _createMenu();
         _createEditor();
+        _createFunctionLine();
         _createAccelerators();
 
         ShowWindow(_handles.mainWindow, SW_SHOWDEFAULT);
     }
     
     MainWindow::~MainWindow() {
+        delete _functionLine;
         delete _editor;
     }
     
@@ -66,6 +72,8 @@ namespace tower {
     void MainWindow::onEvent(Event* event) {
         if (event->getName() == "changed") {
             dispatchEvent(event);
+        } else if (event->getName() == "function") {
+            _find(L"onEvent");
         }
     }
     
@@ -82,13 +90,8 @@ namespace tower {
             }
             
             case WM_SIZE: {
-                if (_editor != nullptr) {
-                    RECT rcClient;
-
-                    GetClientRect(hwnd, &rcClient);
-                    _editor->setPosition(0, 0, rcClient.right, rcClient.bottom);
-                }
-                
+                _layout();
+                                
                 return 0;
             }
 
@@ -125,8 +128,10 @@ namespace tower {
                     }
                     
                     case MainWindowControlIds::findMenuItem: {
-                        Event event("find");
-                        dispatchEvent(&event);
+                        _functionLine->show(L"find \"\"");
+                        
+                        _layout();
+                        
                         break;
                     }
                 }
@@ -142,24 +147,6 @@ namespace tower {
 
                     return reinterpret_cast<LRESULT>(hBrush);
                 }
-        }
-
-        return DefWindowProc(hwnd, uMsg, wParam, lParam);
-    }
-
-    LRESULT CALLBACK MainWindow::trueWndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
-        MainWindow* mainWindow = nullptr;
-        
-        if (uMsg == WM_NCCREATE) {
-            CREATESTRUCT* pCreate = reinterpret_cast<CREATESTRUCT*>(lParam);
-            mainWindow = reinterpret_cast<MainWindow*>(pCreate->lpCreateParams);
-            SetWindowLongPtr(hwnd, GWLP_USERDATA, reinterpret_cast<LONG_PTR>(mainWindow));
-        } else {
-            mainWindow = reinterpret_cast<MainWindow*>(GetWindowLongPtr(hwnd, GWLP_USERDATA));
-        }
-
-        if (mainWindow != nullptr) {
-            return mainWindow->wndProc(hwnd, uMsg, wParam, lParam);
         }
 
         return DefWindowProc(hwnd, uMsg, wParam, lParam);
@@ -185,12 +172,19 @@ namespace tower {
     }
 
     void MainWindow::_createEditor() {
-        // Create editor
         std::ifstream cstream("c:\\dev\\projects\\tower\\tower.json");
         nlohmann::json config = nlohmann::json::parse(cstream);
 
         _editor = new Editor(_handles.mainWindow, _hInstance, config["editor"]["fontSize"]);
         _editor->addEventListener(this);
+    }
+
+    void MainWindow::_createFunctionLine() {
+        std::ifstream cstream("c:\\dev\\projects\\tower\\tower.json");
+        nlohmann::json config = nlohmann::json::parse(cstream);
+
+        _functionLine = new FunctionLine(_handles.mainWindow, _hInstance, config["editor"]["fontSize"]);
+        _functionLine->addEventListener(this);
     }
 
     void MainWindow::_createAccelerators() {
@@ -214,4 +208,42 @@ namespace tower {
 
         delete[] acc;
     }
+    
+    void MainWindow::_layout() {
+        if (_editor != nullptr) {
+            RECT rcClient;
+
+            GetClientRect(_handles.mainWindow, &rcClient);
+            
+            if (_functionLine->isVisible()) {
+                _editor->setPosition(0, 0, rcClient.right, rcClient.bottom - 30);
+                _functionLine->setPosition(0, rcClient.bottom - 30, rcClient.right, 30);
+            } else {
+                _editor->setPosition(0, 0, rcClient.right, rcClient.bottom);
+            }
+        }   
+    }
+    
+    void MainWindow::_find(const std::wstring& needle) {
+        int length = _editor->getTextLength() + 1;
+        wchar_t* buffer = new wchar_t[length];
+        
+        _editor->getText(buffer, length);
+
+        std::wstring haystack(buffer);
+
+        std::wstring::size_type index = haystack.find(needle, 0);
+        
+        if (index != std::wstring::npos) {
+            std::wcout << L"Found index " << index << L" for " << needle << std::endl;
+            
+            SetFocus(_editor->getHwnd());
+            _editor->setSelection(index, needle.size());
+            SetFocus(_functionLine->getHwnd());
+        }
+        
+        delete[] buffer;
+    }
+
+    TRUE_WND_PROC(MainWindow)
 }

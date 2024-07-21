@@ -51,17 +51,9 @@ namespace tower {
         SetWindowText(_hwnd, tmpl.c_str());
         ShowWindow(_hwnd, SW_SHOW);
         setFocus();
-
-        int position = 0;
-
-        for (std::wstring::size_type i = 0; i < tmpl.size(); i++) {
-            if (tmpl[i] == '\"') {
-                position = static_cast<int>(i) + 1;
-                break;
-            }
-        }
-
-        _setCarretPosition(position);
+        
+        _setCaretPosition(0);
+        _positionCaretToNextArgument();
     }
 
     void FunctionLine::hide() {
@@ -100,8 +92,11 @@ namespace tower {
                     dispatchEvent(&event);
 
                     return 0;
-                }
-                else if (wParam == VK_ESCAPE) {
+                } else if (wParam == VK_TAB) { 
+                    _positionCaretToNextArgument();
+
+                    return 0;
+                } else if (wParam == VK_ESCAPE) {
                     Event event("escape");
 
                     dispatchEvent(&event);
@@ -114,8 +109,31 @@ namespace tower {
         return CallWindowProc(_originalWndProc, hwnd, uMsg, wParam, lParam);
     }
 
-    void FunctionLine::_setCarretPosition(int position) {
+    void FunctionLine::_setCaretPosition(int position) {
         SendMessage(_hwnd, EM_SETSEL, static_cast<WPARAM>(position), static_cast<WPARAM>(position));
+    }
+    
+    void FunctionLine::_positionCaretToNextArgument() {
+        int position;
+
+        SendMessage(_hwnd, EM_GETSEL, reinterpret_cast<WPARAM>(&position), 0);
+
+        std::wstring text = getText();
+
+        if (position > 0) {
+            if (text[position] == L'\"') {
+                position += 2;
+            }
+        }
+
+        for (std::wstring::size_type i = position; i < text.size(); i++) {
+            if (text[i] == L'\"') {
+                position = static_cast<int>(i) + 1;
+                break;
+            }
+        }
+
+        _setCaretPosition(position);        
     }
 
     void FunctionLine::_setFunctionEvent(FunctionEvent& event) {

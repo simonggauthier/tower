@@ -167,6 +167,14 @@ namespace tower {
                         
                         break;
                     }
+                    
+                    case MainWindowControlIds::replaceAllMenuItem: {
+                        _functionLine->show(L"replace-all \"\" \"\"");
+                        
+                        _layout();
+                        
+                        break;
+                    }
                 }
             }
 
@@ -200,6 +208,7 @@ namespace tower {
         _handles.findMenu = CreateMenu();
         AppendMenu(_handles.findMenu, MF_STRING, MainWindowControlIds::findMenuItem, L"Find...\tCtrl+F");
         AppendMenu(_handles.findMenu, MF_STRING, MainWindowControlIds::findNextMenuItem, L"Find next\tF3");
+        AppendMenu(_handles.findMenu, MF_STRING, MainWindowControlIds::replaceAllMenuItem, L"Replace all...\tCtrl+H");
         AppendMenu(_handles.menuBar, MF_POPUP, reinterpret_cast<UINT_PTR>(_handles.findMenu), L"Search");
         
         SetMenu(_handles.mainWindow, _handles.menuBar);    
@@ -222,7 +231,7 @@ namespace tower {
     }
 
     void MainWindow::_createAccelerators() {
-        const size_t SIZE = 5;
+        const size_t SIZE = 6;
         ACCEL* acc = new ACCEL[SIZE];
         
         acc[0].fVirt = FVIRTKEY | FCONTROL;
@@ -240,6 +249,9 @@ namespace tower {
         acc[4].fVirt = FVIRTKEY;
         acc[4].key = VK_F3;
         acc[4].cmd = MainWindowControlIds::findNextMenuItem;
+        acc[5].fVirt = FVIRTKEY | FCONTROL;
+        acc[5].key = 'H';
+        acc[5].cmd = MainWindowControlIds::replaceAllMenuItem;
 
         _handles.acceleratorTable = CreateAcceleratorTable(acc, SIZE);
 

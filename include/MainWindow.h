@@ -36,7 +36,8 @@ namespace tower {
         saveFileAsMenuItem = 104,
         exitMenuItem = 105,
         findMenuItem = 106,
-        findNextMenuItem = 107
+        findNextMenuItem = 107,
+        replaceAllMenuItem = 108
     };
 
     class MainWindow : public Container, public EventListener, public EventDispatcher {

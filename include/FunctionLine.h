@@ -30,7 +30,8 @@ namespace tower {
         static LRESULT CALLBACK trueWndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
 
     private:
-        void _setCarretPosition(int position);
+        void _setCaretPosition(int position);
+        void _positionCaretToNextArgument();
         void _setFunctionEvent(FunctionEvent& event);
     
         HWND _hwnd;

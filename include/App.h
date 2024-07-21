@@ -5,7 +5,6 @@
 #include <Windows.h>
 
 #include "MainWindow.h"
-#include "EditorContainer.h"
 #include "EventListener.h"
 #include "Event.h"
 #include "File.h"

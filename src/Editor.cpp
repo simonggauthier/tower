@@ -2,14 +2,16 @@
 
 #include <string>
 
-#include "Wndproc.h"
 #include "Editor.h"
-#include "EditorContainer.h"
+#include "Container.h"
 #include "Event.h"
 #include "EventListener.h"
+#include "Debug.h"
 
 namespace tower {
     Editor::Editor(HWND parentHwnd, HINSTANCE hInstance, int fontSize) {
+        setEventDispatcherId("editor");
+
         _hwnd = CreateWindowEx(
             0,
             L"EDIT",
@@ -21,6 +23,8 @@ namespace tower {
             hInstance,
             this
         );
+
+        _TOWER_DEBUG("Editor hwnd: " << _hwnd);
 
         _font = CreateFont(fontSize, 0, 0, 0, FW_DONTCARE, FALSE, FALSE, FALSE, DEFAULT_CHARSET, OUT_TT_PRECIS, CLIP_DEFAULT_PRECIS, CLEARTYPE_QUALITY, DEFAULT_PITCH | FF_DONTCARE, L"Consolas");
         SendMessage(_hwnd, WM_SETFONT, (WPARAM) _font, TRUE);
@@ -39,6 +43,44 @@ namespace tower {
     
     void Editor::setSelection(int position, int length) {
         SendMessage(_hwnd, EM_SETSEL, position, position + length);
+    }
+
+    void Editor::find(const std::wstring& needle) {
+        _findContext.currentIndex = 0;
+        _findContext.needle = needle;
+
+        findNext();
+    }
+
+    void Editor::findNext() {
+        int length = getTextLength() + 1;
+        wchar_t* buffer = new wchar_t[length];
+        
+        getText(buffer, length);
+        
+        std::wstring haystack(buffer);
+
+        delete[] buffer;
+        
+        std::wstring::size_type index = haystack.find(_findContext.needle, _findContext.currentIndex);
+        
+        if (index != std::wstring::npos) {
+            int currentLine = getCurrentLineIndex();
+
+            setFocus();
+            setSelection(index, _findContext.needle.size());
+            _findContext.currentIndex = index + 1;
+
+            int diffLine = getCurrentLineIndex() - currentLine;
+
+            if (diffLine > 0) {
+                if (diffLine > 2) {
+                    diffLine -= 1;
+                }
+                
+                SendMessage(_hwnd, EM_LINESCROLL, 0, diffLine);
+            }
+        }
     }
 
     int Editor::getTextLength() const {
@@ -69,6 +111,10 @@ namespace tower {
         buffer[copied] = '\0';
     }
 
+    void Editor::setFocus() {
+        SetFocus(_hwnd);
+    }
+
     LRESULT CALLBACK Editor::wndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
         switch (uMsg) {
             case WM_CHAR: {
@@ -93,6 +139,12 @@ namespace tower {
                     Event event("changed");
                     dispatchEvent(&event);
 
+                    return 0;
+                } else if (wParam == VK_ESCAPE) {
+                    Event event("escape");
+                
+                    dispatchEvent(&event);
+                    
                     return 0;
                 }
             }
@@ -133,5 +185,14 @@ namespace tower {
         return ret;
     }
     
-    TRUE_WND_PROC_CONTROL(Editor, EditorContainer, getEditor)
+    LRESULT CALLBACK Editor::trueWndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
+        HWND parentHwnd = GetParent(hwnd);
+        Container* parent = reinterpret_cast<Container*>(GetWindowLongPtr(parentHwnd, GWLP_USERDATA));
+
+        if (parent && parent->getEditor()) {
+            return parent->getEditor()->wndProc(hwnd, uMsg, wParam, lParam);\
+        }
+
+        return 0;
+    }
 }

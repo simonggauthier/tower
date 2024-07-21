@@ -4,10 +4,9 @@
 
 #include <string>
 
-#include "Wndproc.h"
 #include "EventListener.h"
 #include "EventDispatcher.h"
-#include "Event.h"
+#include "FunctionEvent.h"
 
 namespace tower {
     class FunctionLine : public EventDispatcher {
@@ -22,13 +21,17 @@ namespace tower {
         void show(const std::wstring& tmpl);
         void hide();
 
+        std::wstring getText();
         bool isVisible() const { return _isVisible; }
 
+        void setFocus();
+
         LRESULT CALLBACK wndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
-        TRUE_WND_PROC_DEF;
+        static LRESULT CALLBACK trueWndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
 
     private:
         void _setCarretPosition(int position);
+        void _setFunctionEvent(FunctionEvent& event);
     
         HWND _hwnd;
         WNDPROC _originalWndProc;

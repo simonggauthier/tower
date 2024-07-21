@@ -2,7 +2,8 @@
 
 #include <Windows.h>
 
-#include "Wndproc.h"
+#include <string>
+
 #include "EventListener.h"
 #include "EventDispatcher.h"
 #include "Event.h"
@@ -20,6 +21,17 @@ namespace tower {
         
         bool hasOnlySpaces() { return spacesAtStart == totalChars; }
     };
+    
+    struct EditorFindContext {
+        std::wstring needle;
+        int currentIndex;
+        
+        EditorFindContext() :
+            needle(L""),
+            currentIndex(0) {
+            
+        }
+    };
 
     class Editor : public EventDispatcher {
     public:
@@ -29,6 +41,9 @@ namespace tower {
         void setPosition(int x, int y, int width, int height);
         void setSelection(int position, int length);
 
+        void find(const std::wstring& needle);
+        void findNext();
+
         int getTextLength() const;
         void getText(wchar_t* buffer, int length) const;
         void setText(const wchar_t* text);
@@ -37,13 +52,17 @@ namespace tower {
         int getCurrentLineIndex() const;
         void getLine(int index, wchar_t* buffer, int length) const;
 
+        void setFocus();
+
         HWND getHwnd() const { return _hwnd; }
 
         LRESULT CALLBACK wndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
-        TRUE_WND_PROC_DEF;
+        static LRESULT CALLBACK trueWndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
 
     private:
         EditorLineInfo _getCurrentLineInfo() const;
+        
+        EditorFindContext _findContext;
         
         HWND _hwnd;
         WNDPROC _originalWndProc;

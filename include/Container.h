@@ -1,10 +1,12 @@
 #pragma once
 
 #include "Editor.h"
+#include "FunctionLine.h"
 
 namespace tower {
-    class EditorContainer {
+    class Container {
     public:
         virtual Editor* getEditor() = 0;
+        virtual FunctionLine* getFunctionLine() = 0;
     };
 }

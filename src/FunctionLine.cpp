@@ -4,13 +4,16 @@
 
 #include <string>
 
-#include "FunctionLineContainer.h"
-
-#include <stdio.h>
+#include "FunctionEvent.h"
+#include "Container.h"
+#include "Debug.h"
 
 namespace tower {
     FunctionLine::FunctionLine(HWND parentHwnd, HINSTANCE hInstance, int fontSize) :
         _isVisible(false) {
+
+        setEventDispatcherId("functionLine");
+
         _hwnd = CreateWindowEx(
             0,
             L"EDIT",
@@ -22,43 +25,45 @@ namespace tower {
             hInstance,
             this
         );
-        
+
+        _TOWER_DEBUG("FunctionLine hwnd: " << _hwnd);
+
         _font = CreateFont(fontSize, 0, 0, 0, FW_DONTCARE, FALSE, FALSE, FALSE, DEFAULT_CHARSET, OUT_TT_PRECIS, CLIP_DEFAULT_PRECIS, CLEARTYPE_QUALITY, DEFAULT_PITCH | FF_DONTCARE, L"Consolas");
-        SendMessage(_hwnd, WM_SETFONT, (WPARAM) _font, TRUE);
-        
-        _originalWndProc = (WNDPROC) SetWindowLongPtr(_hwnd, GWLP_WNDPROC, (LONG_PTR) FunctionLine::trueWndProc);
+        SendMessage(_hwnd, WM_SETFONT, (WPARAM)_font, TRUE);
+
+        _originalWndProc = reinterpret_cast<WNDPROC>(SetWindowLongPtr(_hwnd, GWLP_WNDPROC, reinterpret_cast<LONG_PTR>(FunctionLine::trueWndProc)));
 
         ShowWindow(_hwnd, SW_HIDE);
     }
-    
+
     FunctionLine::~FunctionLine() {
         DeleteObject(_font);
         DestroyWindow(_hwnd);
     }
-    
+
     void FunctionLine::setPosition(int x, int y, int width, int height) {
         SetWindowPos(_hwnd, nullptr, x, y, width, height, SWP_NOZORDER);
     }
-    
+
     void FunctionLine::show(const std::wstring& tmpl) {
         _isVisible = true;
-        
+
         SetWindowText(_hwnd, tmpl.c_str());
         ShowWindow(_hwnd, SW_SHOW);
-        SetFocus(_hwnd);
-        
+        setFocus();
+
         int position = 0;
-        
+
         for (std::wstring::size_type i = 0; i < tmpl.size(); i++) {
             if (tmpl[i] == '\"') {
                 position = static_cast<int>(i) + 1;
                 break;
             }
         }
-        
+
         _setCarretPosition(position);
     }
-    
+
     void FunctionLine::hide() {
         _isVisible = false;
 
@@ -66,28 +71,91 @@ namespace tower {
 
         ShowWindow(_hwnd, SW_HIDE);
     }
-    
-    void FunctionLine::_setCarretPosition(int position)
-    {
-        SendMessage(_hwnd, EM_SETSEL, static_cast<WPARAM>(position), static_cast<WPARAM>(position));
+
+    std::wstring FunctionLine::getText() {
+        int length = GetWindowTextLength(_hwnd) + 1;
+        wchar_t* buffer = new wchar_t[length];
+
+        GetWindowText(_hwnd, buffer, length);
+        buffer[length - 1] = L'\0';
+
+        std::wstring ret = std::wstring(buffer);
+
+        delete[] buffer;
+
+        return ret;
     }
-    
+
+    void FunctionLine::setFocus() {
+        SetFocus(_hwnd);
+    }
+
     LRESULT CALLBACK FunctionLine::wndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
         switch (uMsg) {
             case WM_CHAR: {
-                // printf("CHAR\n");
                 if (wParam == VK_RETURN) {
-                    Event event("function");
-                    
+                    FunctionEvent event;
+                    _setFunctionEvent(event);
+
                     dispatchEvent(&event);
-                    
+
+                    return 0;
+                }
+                else if (wParam == VK_ESCAPE) {
+                    Event event("escape");
+
+                    dispatchEvent(&event);
+
                     return 0;
                 }
             }
         }
-    
+
         return CallWindowProc(_originalWndProc, hwnd, uMsg, wParam, lParam);
     }
-    
-    TRUE_WND_PROC_CONTROL(FunctionLine, FunctionLineContainer, getFunctionLine)
+
+    void FunctionLine::_setCarretPosition(int position) {
+        SendMessage(_hwnd, EM_SETSEL, static_cast<WPARAM>(position), static_cast<WPARAM>(position));
+    }
+
+    void FunctionLine::_setFunctionEvent(FunctionEvent& event) {
+        std::wstring line = getText();
+
+        if (line.length() == 0) {
+            return;
+        }
+
+        std::wstring acc = L"";
+        bool inString = false;
+
+        for (std::wstring::size_type i = 0; i < line.size(); i++) {
+            // Space or eol
+            if ((!inString && line[i] == L' ') || 
+                i == line.size() - 1) {
+                if (event.getFunctionName().length() == 0) {
+                    event.setFunctionName(acc);
+                    acc = L"";
+                } else {
+                    event.addArgument(acc);
+                    acc = L"";
+                }
+            // ""
+            } else if (line[i] == L'\"') {
+                inString = !inString;
+            } else {
+                acc += line[i];
+            }
+        }
+    }
+
+    LRESULT CALLBACK FunctionLine::trueWndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
+        HWND parentHwnd = GetParent(hwnd);
+        Container* parent = reinterpret_cast<Container*>(GetWindowLongPtr(parentHwnd, GWLP_USERDATA));
+
+        if (parent && parent->getFunctionLine()) {
+            return parent->getFunctionLine()->wndProc(hwnd, uMsg, wParam, lParam);\
+        }
+
+        return 0;
+    }
 }

@@ -4,11 +4,9 @@
 
 #include <Windows.h>
 
-#include "Wndproc.h"
 #include "Editor.h"
 #include "FunctionLine.h"
-#include "EditorContainer.h"
-#include "FunctionLineContainer.h"
+#include "Container.h"
 #include "EventListener.h"
 #include "EventDispatcher.h"
 #include "Event.h"
@@ -37,10 +35,11 @@ namespace tower {
         saveFileMenuItem = 103,
         saveFileAsMenuItem = 104,
         exitMenuItem = 105,
-        findMenuItem = 106
+        findMenuItem = 106,
+        findNextMenuItem = 107
     };
 
-    class MainWindow : public EditorContainer, public EventListener, public EventDispatcher {
+    class MainWindow : public Container, public EventListener, public EventDispatcher {
     public:
         MainWindow(HINSTANCE hInstance);
         virtual ~MainWindow();
@@ -54,11 +53,12 @@ namespace tower {
         void onEvent(Event* event);
         
         HWND getHandle() { return _handles.mainWindow; }
+        
         Editor* getEditor() { return _editor; }
         FunctionLine* getFunctionLine() { return _functionLine; }
 
         LRESULT CALLBACK wndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
-        TRUE_WND_PROC_DEF;
+        static LRESULT CALLBACK trueWndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
 
     private:
         void _createMenu();
@@ -66,7 +66,6 @@ namespace tower {
         void _createFunctionLine();
         void _createAccelerators();
         void _layout();
-        void _find(const std::wstring& needle);
 
         HINSTANCE _hInstance;
         MainWindowHandles _handles;

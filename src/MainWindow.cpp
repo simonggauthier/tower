@@ -6,14 +6,18 @@
 
 #include "json.hpp"
 
-#include "Wndproc.h"
-
-#include <iostream>
+#include "Event.h"
+#include "FunctionEvent.h"
+#include "Debug.h"
 
 namespace tower {
     MainWindow::MainWindow(HINSTANCE hInstance) :
         _hInstance(hInstance),
-        _editor(nullptr) {
+        _editor(nullptr),
+        _functionLine(nullptr) {
+        
+        setEventDispatcherId("mainWindow");
+
         const wchar_t CLASS_NAME[]  = L"Tower Window Class";
 
         WNDCLASS wc = { };
@@ -37,12 +41,16 @@ namespace tower {
             this        // Additional application data
         );
 
+        _TOWER_DEBUG("MainWindow hwnd: " << _handles.mainWindow);
+
         _createMenu();
         _createEditor();
         _createFunctionLine();
         _createAccelerators();
 
         ShowWindow(_handles.mainWindow, SW_SHOWDEFAULT);
+
+        _TOWER_DEBUG("GO\n");
     }
     
     MainWindow::~MainWindow() {
@@ -70,10 +78,29 @@ namespace tower {
     }
     
     void MainWindow::onEvent(Event* event) {
-        if (event->getName() == "changed") {
-            dispatchEvent(event);
-        } else if (event->getName() == "function") {
-            _find(L"onEvent");
+        if (event->getFromEventDispatcherId() == "editor") {
+            if (event->getName() == "changed") {
+                dispatchEvent(event);
+            } else if (event->getName() == "escape") {
+                _functionLine->hide();
+                _layout();
+                _editor->setFocus();
+            }
+        }
+        
+        if (event->getFromEventDispatcherId() == "functionLine") {
+            if (event->getName() == "function") {
+                FunctionEvent* functionEvent = dynamic_cast<FunctionEvent*>(event);
+                
+                if (functionEvent->getFunctionName() == L"find" &&
+                    functionEvent->getArguments().size() > 0) {
+                    _editor->find(functionEvent->getArguments()[0]);
+                }
+            } else if (event->getName() == "escape") {
+                _functionLine->hide();
+                _layout();
+                _editor->setFocus();
+            }
         }
     }
     
@@ -134,6 +161,12 @@ namespace tower {
                         
                         break;
                     }
+
+                    case MainWindowControlIds::findNextMenuItem: {
+                        _editor->findNext();
+                        
+                        break;
+                    }
                 }
             }
 
@@ -166,6 +199,7 @@ namespace tower {
         
         _handles.findMenu = CreateMenu();
         AppendMenu(_handles.findMenu, MF_STRING, MainWindowControlIds::findMenuItem, L"Find...\tCtrl+F");
+        AppendMenu(_handles.findMenu, MF_STRING, MainWindowControlIds::findNextMenuItem, L"Find next\tF3");
         AppendMenu(_handles.menuBar, MF_POPUP, reinterpret_cast<UINT_PTR>(_handles.findMenu), L"Search");
         
         SetMenu(_handles.mainWindow, _handles.menuBar);    
@@ -188,7 +222,7 @@ namespace tower {
     }
 
     void MainWindow::_createAccelerators() {
-        const size_t SIZE = 4;
+        const size_t SIZE = 5;
         ACCEL* acc = new ACCEL[SIZE];
         
         acc[0].fVirt = FVIRTKEY | FCONTROL;
@@ -203,7 +237,10 @@ namespace tower {
         acc[3].fVirt = FVIRTKEY | FCONTROL;
         acc[3].key = 'F';
         acc[3].cmd = MainWindowControlIds::findMenuItem;
-               
+        acc[4].fVirt = FVIRTKEY;
+        acc[4].key = VK_F3;
+        acc[4].cmd = MainWindowControlIds::findNextMenuItem;
+
         _handles.acceleratorTable = CreateAcceleratorTable(acc, SIZE);
 
         delete[] acc;
@@ -223,27 +260,22 @@ namespace tower {
             }
         }   
     }
-    
-    void MainWindow::_find(const std::wstring& needle) {
-        int length = _editor->getTextLength() + 1;
-        wchar_t* buffer = new wchar_t[length];
-        
-        _editor->getText(buffer, length);
 
-        std::wstring haystack(buffer);
+    LRESULT CALLBACK MainWindow::trueWndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {\
+        MainWindow* window = nullptr;
 
-        std::wstring::size_type index = haystack.find(needle, 0);
-        
-        if (index != std::wstring::npos) {
-            std::wcout << L"Found index " << index << L" for " << needle << std::endl;
-            
-            SetFocus(_editor->getHwnd());
-            _editor->setSelection(index, needle.size());
-            SetFocus(_functionLine->getHwnd());
+        if (uMsg == WM_NCCREATE) {
+            CREATESTRUCT* pCreate = reinterpret_cast<CREATESTRUCT*>(lParam);
+            window = reinterpret_cast<MainWindow*>(pCreate->lpCreateParams);
+            SetWindowLongPtr(hwnd, GWLP_USERDATA, reinterpret_cast<LONG_PTR>(window));
+        } else {
+            window = reinterpret_cast<MainWindow*>(GetWindowLongPtr(hwnd, GWLP_USERDATA));
         }
-        
-        delete[] buffer;
-    }
 
-    TRUE_WND_PROC(MainWindow)
+        if (window != nullptr) {
+            return window->wndProc(hwnd, uMsg, wParam, lParam);
+        }
+
+        return DefWindowProc(hwnd, uMsg, wParam, lParam);
+    }
 }

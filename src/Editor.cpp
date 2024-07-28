@@ -6,10 +6,11 @@
 #include "Container.h"
 #include "Event.h"
 #include "EventListener.h"
+#include "GlobalConfiguration.h"
 #include "Debug.h"
 
 namespace tower {
-    Editor::Editor(HWND parentHwnd, HINSTANCE hInstance, int fontSize) {
+    Editor::Editor(HWND parentHwnd, HINSTANCE hInstance) {
         setEventDispatcherId("editor");
 
         _hwnd = CreateWindowEx(
@@ -25,6 +26,8 @@ namespace tower {
         );
 
         _TOWER_DEBUG("Editor hwnd: " << _hwnd);
+
+        int fontSize = GlobalConfiguration::getInstance().getConfiguration()["editor"]["fontSize"];
 
         _font = CreateFont(fontSize, 0, 0, 0, FW_DONTCARE, FALSE, FALSE, FALSE, DEFAULT_CHARSET, OUT_TT_PRECIS, CLIP_DEFAULT_PRECIS, CLEARTYPE_QUALITY, DEFAULT_PITCH | FF_DONTCARE, L"Consolas");
         SendMessage(_hwnd, WM_SETFONT, (WPARAM) _font, TRUE);

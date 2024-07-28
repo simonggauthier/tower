@@ -1,5 +1,9 @@
 {
     "editor": {
         "fontSize": 22
+    },
+
+    "functionLine": {
+        "fontSize": 22
     }
 }

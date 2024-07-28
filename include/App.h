@@ -35,6 +35,7 @@ namespace tower {
         bool _askQuitConfirmation();
         bool _askNewConfirmation();
         bool _askOpenConfirmation();
+        std::wstring _getExecutablePath();
 
         HINSTANCE _hInstance;
         

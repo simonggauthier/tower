@@ -11,12 +11,15 @@
 #include "MainWindow.h"
 #include "Event.h"
 #include "File.h"
+#include "GlobalConfiguration.h"
 
 namespace tower {
     App::App(HINSTANCE hInstance) :
         _hInstance(hInstance),
         _currentFile(nullptr),
         _mainWindow(nullptr) {
+
+        GlobalConfiguration::getInstance().load(_getExecutablePath() + L"tower.json");
 
         _currentFile = new File();
         
@@ -202,5 +205,14 @@ namespace tower {
     bool App::_askOpenConfirmation() {
         return MessageBox(nullptr, L"You have unsaved changes. Do you still want to open a file?", 
                                    L"Confirm open file", MB_ICONEXCLAMATION | MB_YESNO) == IDYES;
+    }
+
+    std::wstring App::_getExecutablePath() {
+        wchar_t szFileName[MAX_PATH];
+        GetModuleFileName(NULL, szFileName, MAX_PATH);
+
+        std::wstring ret = std::wstring(szFileName);
+
+        return ret.substr(0, ret.find_last_of(L"\\") + 1);
     }
 }

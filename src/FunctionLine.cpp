@@ -6,10 +6,11 @@
 
 #include "FunctionEvent.h"
 #include "Container.h"
+#include "GlobalConfiguration.h"
 #include "Debug.h"
 
 namespace tower {
-    FunctionLine::FunctionLine(HWND parentHwnd, HINSTANCE hInstance, int fontSize) :
+    FunctionLine::FunctionLine(HWND parentHwnd, HINSTANCE hInstance) :
         _isVisible(false) {
 
         setEventDispatcherId("functionLine");
@@ -27,6 +28,8 @@ namespace tower {
         );
 
         _TOWER_DEBUG("FunctionLine hwnd: " << _hwnd);
+
+        int fontSize = GlobalConfiguration::getInstance().getConfiguration()["functionLine"]["fontSize"];
 
         _font = CreateFont(fontSize, 0, 0, 0, FW_DONTCARE, FALSE, FALSE, FALSE, DEFAULT_CHARSET, OUT_TT_PRECIS, CLIP_DEFAULT_PRECIS, CLEARTYPE_QUALITY, DEFAULT_PITCH | FF_DONTCARE, L"Consolas");
         SendMessage(_hwnd, WM_SETFONT, (WPARAM)_font, TRUE);

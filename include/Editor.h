@@ -35,7 +35,7 @@ namespace tower {
 
     class Editor : public EventDispatcher {
     public:
-        Editor(HWND parentHwnd, HINSTANCE hInstance, int fontSize);
+        Editor(HWND parentHwnd, HINSTANCE hInstance);
         ~Editor();
         
         void setPosition(int x, int y, int width, int height);

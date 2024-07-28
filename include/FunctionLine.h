@@ -11,7 +11,7 @@
 namespace tower {
     class FunctionLine : public EventDispatcher {
     public:
-        FunctionLine(HWND parentHwnd, HINSTANCE hInstance, int fontSize);
+        FunctionLine(HWND parentHwnd, HINSTANCE hInstance);
         ~FunctionLine();
         
         void setPosition(int x, int y, int width, int height);

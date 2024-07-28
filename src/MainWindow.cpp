@@ -218,10 +218,7 @@ namespace tower {
     }
 
     void MainWindow::_createEditor() {
-        std::ifstream cstream("c:\\dev\\projects\\tower\\tower.json");
-        nlohmann::json config = nlohmann::json::parse(cstream);
-
-        _editor = new Editor(_handles.mainWindow, _hInstance, config["editor"]["fontSize"]);
+        _editor = new Editor(_handles.mainWindow, _hInstance);
         _editor->addEventListener(this);
     }
 
@@ -229,7 +226,7 @@ namespace tower {
         std::ifstream cstream("c:\\dev\\projects\\tower\\tower.json");
         nlohmann::json config = nlohmann::json::parse(cstream);
 
-        _functionLine = new FunctionLine(_handles.mainWindow, _hInstance, config["editor"]["fontSize"]);
+        _functionLine = new FunctionLine(_handles.mainWindow, _hInstance);
         _functionLine->addEventListener(this);
     }
 

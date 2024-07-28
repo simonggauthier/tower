@@ -181,10 +181,10 @@ namespace tower {
             case WM_CTLCOLOREDIT:
                 {
                     HDC hdc = reinterpret_cast<HDC>(wParam);
-                    SetBkColor(hdc, RGB(10, 10, 10));
-                    SetTextColor(hdc, RGB(200, 200, 200));
+                    SetBkColor(hdc, RGB(10, 10, 30));
+                    SetTextColor(hdc, RGB(222, 222, 222));
 
-                    HBRUSH hBrush = CreateSolidBrush(RGB(10, 10, 10));
+                    HBRUSH hBrush = CreateSolidBrush(RGB(10, 10, 30));
 
                     return reinterpret_cast<LRESULT>(hBrush);
                 }

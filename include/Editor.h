@@ -40,19 +40,22 @@ namespace tower {
         
         void setPosition(int x, int y, int width, int height);
         void setSelection(int position, int length);
-
+        
+        void setText(const wchar_t* text);
+        void clear();
+        
+        void setFocus();
+        void scrollToTop();
+        
         void find(const std::wstring& needle);
         void findNext();
 
         int getTextLength() const;
         void getText(wchar_t* buffer, int length) const;
-        void setText(const wchar_t* text);
-        void clear();
 
+        int getTotalLines() const;
         int getCurrentLineIndex() const;
         void getLine(int index, wchar_t* buffer, int length) const;
-
-        void setFocus();
 
         HWND getHwnd() const { return _hwnd; }
 

@@ -43,7 +43,7 @@ namespace tower {
     class MainWindow : public Container, public EventListener, public EventDispatcher {
     public:
         MainWindow(HINSTANCE hInstance);
-        virtual ~MainWindow();
+        ~MainWindow();
         
         void mainLoop();
         

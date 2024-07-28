@@ -5,6 +5,8 @@
 namespace tower {
     class EventListener {
     public:
+        virtual ~EventListener() = default;
+
         virtual void onEvent(Event* event) = 0;
     };
 }

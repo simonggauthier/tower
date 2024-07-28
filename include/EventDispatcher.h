@@ -9,6 +9,8 @@
 namespace tower {
     class EventDispatcher {
     public:
+        virtual ~EventDispatcher() = default;
+
         void addEventListener(EventListener* listener) { _listeners.push_back(listener); }
         
         std::string getEventDispatcherId() const { return _id; };

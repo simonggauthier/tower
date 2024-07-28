@@ -45,9 +45,29 @@ namespace tower {
         SendMessage(_hwnd, EM_SETSEL, position, position + length);
     }
 
+    void Editor::setText(const wchar_t* text) {
+        SetWindowText(_hwnd, text);
+    }
+
+    void Editor::clear() {
+        SetWindowText(_hwnd, L"");
+    }
+
+    void Editor::setFocus() {
+        SetFocus(_hwnd);
+    }
+
+    void Editor::scrollToTop() {
+        int totalLines = getTotalLines();
+        
+        SendMessage(_hwnd, EM_LINESCROLL, 0, -totalLines);
+    }
+
     void Editor::find(const std::wstring& needle) {
         _findContext.currentIndex = 0;
         _findContext.needle = needle;
+        
+        scrollToTop();
 
         findNext();
     }
@@ -73,11 +93,7 @@ namespace tower {
 
             int diffLine = getCurrentLineIndex() - currentLine;
 
-            if (diffLine > 0) {
-                if (diffLine > 2) {
-                    diffLine -= 1;
-                }
-                
+            if (diffLine > 0) {                
                 SendMessage(_hwnd, EM_LINESCROLL, 0, diffLine);
             }
         }
@@ -91,12 +107,8 @@ namespace tower {
         GetWindowText(_hwnd, buffer, length);
     }
 
-    void Editor::setText(const wchar_t* text) {
-        SetWindowText(_hwnd, text);
-    }
-
-    void Editor::clear() {
-        SetWindowText(_hwnd, L"");
+    int Editor::getTotalLines() const {
+        return SendMessage(_hwnd, EM_GETLINECOUNT, 0, 0);
     }
 
     int Editor::getCurrentLineIndex() const {
@@ -109,10 +121,6 @@ namespace tower {
         memcpy(buffer, &dLength, sizeof(DWORD));
         int copied = SendMessage(_hwnd, EM_GETLINE, index, reinterpret_cast<LPARAM>(buffer));
         buffer[copied] = '\0';
-    }
-
-    void Editor::setFocus() {
-        SetFocus(_hwnd);
     }
 
     LRESULT CALLBACK Editor::wndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {

@@ -39,18 +39,6 @@ namespace tower {
 
         void _saveState();
 
-        std::string _dumbWideToNarrow(const std::wstring& wide) {
-            std::string narrow(wide.begin(), wide.end());
-            
-            return narrow;            
-        }
-
-        std::wstring _dumbNarrowToWide(const std::string& narrow) {
-            std::wstring wide(narrow.begin(), narrow.end());
-            
-            return wide;
-        }
-
         HINSTANCE _hInstance;
         
         File* _currentFile;

@@ -178,6 +178,14 @@ namespace tower {
                         
                         break;
                     }
+
+                    case MainWindowControlIds::openFunctionsMenuItem: {
+                        _functionLine->show(L"");
+                        
+                        _layout();
+                        
+                        break;
+                    }
                 }
             }
 
@@ -213,6 +221,10 @@ namespace tower {
         AppendMenu(_handles.findMenu, MF_STRING, MainWindowControlIds::findNextMenuItem, L"Find next\tF3");
         AppendMenu(_handles.findMenu, MF_STRING, MainWindowControlIds::replaceAllMenuItem, L"Replace all...\tCtrl+H");
         AppendMenu(_handles.menuBar, MF_POPUP, reinterpret_cast<UINT_PTR>(_handles.findMenu), L"Search");
+
+        _handles.functionsMenu = CreateMenu();
+        AppendMenu(_handles.functionsMenu, MF_STRING, MainWindowControlIds::openFunctionsMenuItem, L"Open functions...\tCtrl+P");
+        AppendMenu(_handles.menuBar, MF_POPUP, reinterpret_cast<UINT_PTR>(_handles.functionsMenu), L"Functions");
         
         SetMenu(_handles.mainWindow, _handles.menuBar);    
     }
@@ -231,9 +243,9 @@ namespace tower {
     }
 
     void MainWindow::_createAccelerators() {
-        const size_t SIZE = 6;
+        const size_t SIZE = 7;
         ACCEL* acc = new ACCEL[SIZE];
-        
+
         acc[0].fVirt = FVIRTKEY | FCONTROL;
         acc[0].key = 'N';
         acc[0].cmd = MainWindowControlIds::newFileMenuItem;
@@ -252,6 +264,9 @@ namespace tower {
         acc[5].fVirt = FVIRTKEY | FCONTROL;
         acc[5].key = 'H';
         acc[5].cmd = MainWindowControlIds::replaceAllMenuItem;
+        acc[6].fVirt = FVIRTKEY | FCONTROL;
+        acc[6].key = 'P';
+        acc[6].cmd = MainWindowControlIds::openFunctionsMenuItem;
 
         _handles.acceleratorTable = CreateAcceleratorTable(acc, SIZE);
 

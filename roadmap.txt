@@ -1,9 +1,11 @@
-- File state display + warnings (DONE)
-- Command palette
-- Search
-- Edit menu
-- Tabs
+- File state display + warnings   (DONE)
+- Command palette                 (DONE)
+- Search                          (DONE)
+- Config                          (DONE)
+- State                           (DONE)
 - File list
+- Edit menu
 - Status bar
+- Tabs
 - Text formatting
 - Tests

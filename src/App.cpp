@@ -14,6 +14,7 @@
 #include "File.h"
 #include "GlobalConfiguration.h"
 #include "SavedState.h"
+#include "Debug.h"
 
 namespace tower {
     App::App(HINSTANCE hInstance) :
@@ -28,9 +29,11 @@ namespace tower {
         _mainWindow->addEventListener(this);
 
         if (SavedState::getInstance().getState().contains("currentFilename")) {
-            std::wstring filename = _dumbNarrowToWide(SavedState::getInstance().getState()["currentFilename"]);
+            std::wstring filename = SavedState::narrowToWide(SavedState::getInstance().getState()["currentFilename"]);
 
             if (!filename.empty() && std::filesystem::exists(filename)) {
+                _TOWER_DEBUGW(L"Loading currentFilename from state: " << filename);
+
                 _currentFile = new File(filename);
 
                 _readCurrentFile();
@@ -239,7 +242,7 @@ namespace tower {
     }
 
     void App::_saveState() {
-        SavedState::getInstance().getState()["currentFilename"] = _dumbWideToNarrow(_currentFile->getFilename());
+        SavedState::getInstance().getState()["currentFilename"] = SavedState::wideToNarrow(_currentFile->getFilename());
         SavedState::getInstance().save(_getExecutablePath() + L"state.json");
     }
 }

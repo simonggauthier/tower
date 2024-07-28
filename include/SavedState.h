@@ -28,6 +28,18 @@ namespace tower {
             return _state;
         }
 
+        static std::string wideToNarrow(const std::wstring& wide) {
+            std::string narrow(wide.begin(), wide.end());
+            
+            return narrow;            
+        }
+
+        static std::wstring narrowToWide(const std::string& narrow) {
+            std::wstring wide(narrow.begin(), narrow.end());
+            
+            return wide;
+        }
+
     private:
         SavedState() = default;
 

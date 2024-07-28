@@ -63,6 +63,28 @@ namespace tower {
         SendMessage(_hwnd, EM_LINESCROLL, 0, -totalLines);
     }
 
+    void Editor::replaceAll(const std::wstring& needle, const std::wstring& replacement) {
+        int length = getTextLength() + 1;
+        wchar_t* buffer = new wchar_t[length];
+        
+        getText(buffer, length);
+        
+        std::wstring haystack(buffer);
+        
+        delete[] buffer;
+        
+        size_t position = haystack.find(needle);
+        while (position != std::wstring::npos) {
+            haystack.replace(position, needle.size(), replacement);
+            position = haystack.find(needle, position + replacement.size());
+        }
+        
+        setText(haystack.c_str());
+        
+        Event event("changed");
+        dispatchEvent(&event);
+    }
+
     void Editor::find(const std::wstring& needle) {
         _findContext.currentIndex = 0;
         _findContext.needle = needle;

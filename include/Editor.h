@@ -47,6 +47,7 @@ namespace tower {
         void setFocus();
         void scrollToTop();
         
+        void replaceAll(const std::wstring& needle, const std::wstring& replacement);
         void find(const std::wstring& needle);
         void findNext();
 

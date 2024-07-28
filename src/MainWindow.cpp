@@ -95,6 +95,9 @@ namespace tower {
                 if (functionEvent->getFunctionName() == L"find" &&
                     functionEvent->getArguments().size() > 0) {
                     _editor->find(functionEvent->getArguments()[0]);
+                } else if (functionEvent->getFunctionName() == L"replace-all" &&
+                           functionEvent->getArguments().size() > 1) {
+                    _editor->replaceAll(functionEvent->getArguments()[0], functionEvent->getArguments()[1]);
                 }
             } else if (event->getName() == "escape") {
                 _functionLine->hide();

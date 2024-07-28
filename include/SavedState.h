@@ -24,7 +24,7 @@ namespace tower {
 
         void save(const std::wstring& filename);
 
-        const state& getState() const {
+        state& getState() {
             return _state;
         }
 

@@ -3,6 +3,7 @@
 #include <string>
 #include <sstream>
 #include <fstream>
+#include <filesystem>
 
 #include <Windows.h>
 
@@ -12,6 +13,7 @@
 #include "Event.h"
 #include "File.h"
 #include "GlobalConfiguration.h"
+#include "SavedState.h"
 
 namespace tower {
     App::App(HINSTANCE hInstance) :
@@ -20,11 +22,25 @@ namespace tower {
         _mainWindow(nullptr) {
 
         GlobalConfiguration::getInstance().load(_getExecutablePath() + L"tower.json");
+        SavedState::getInstance().load(_getExecutablePath() + L"state.json");
 
-        _currentFile = new File();
-        
         _mainWindow = new MainWindow(hInstance);
         _mainWindow->addEventListener(this);
+
+        if (SavedState::getInstance().getState().contains("currentFilename")) {
+            std::wstring filename = _dumbNarrowToWide(SavedState::getInstance().getState()["currentFilename"]);
+
+            if (!filename.empty() && std::filesystem::exists(filename)) {
+                _currentFile = new File(filename);
+
+                _readCurrentFile();
+                _setWindowTitle();
+            }
+        }
+
+        if (_currentFile == nullptr) {
+            _currentFile = new File();
+        }
     }
 
     App::~App() {
@@ -69,6 +85,8 @@ namespace tower {
         delete _currentFile;
         _currentFile = new File();
 
+        _saveState();
+
         _setWindowTitle();
     }
 
@@ -88,6 +106,8 @@ namespace tower {
 
         delete _currentFile;
         _currentFile = new File(filename);
+
+        _saveState();
 
         _readCurrentFile();
         _setWindowTitle();
@@ -111,6 +131,8 @@ namespace tower {
 
         delete _currentFile;
         _currentFile = new File(filename);
+
+        _saveState();
 
         _writeCurrentFile();
         _setWindowTitle();
@@ -214,5 +236,10 @@ namespace tower {
         std::wstring ret = std::wstring(szFileName);
 
         return ret.substr(0, ret.find_last_of(L"\\") + 1);
+    }
+
+    void App::_saveState() {
+        SavedState::getInstance().getState()["currentFilename"] = _dumbWideToNarrow(_currentFile->getFilename());
+        SavedState::getInstance().save(_getExecutablePath() + L"state.json");
     }
 }

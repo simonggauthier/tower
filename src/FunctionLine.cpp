@@ -47,7 +47,11 @@ namespace tower {
     void FunctionLine::setPosition(int x, int y, int width, int height) {
         SetWindowPos(_hwnd, nullptr, x, y, width, height, SWP_NOZORDER);
     }
-
+    
+    void FunctionLine::setSelection(int position, int length) {
+        SendMessage(_hwnd, EM_SETSEL, position, position + length);
+    }
+    
     void FunctionLine::show(const std::wstring& tmpl) {
         _isVisible = true;
 
@@ -81,6 +85,10 @@ namespace tower {
         return ret;
     }
 
+    int FunctionLine::getTextLength() {
+        return GetWindowTextLength(_hwnd);
+    }
+
     void FunctionLine::setFocus() {
         SetFocus(_hwnd);
     }
@@ -88,6 +96,8 @@ namespace tower {
     LRESULT CALLBACK FunctionLine::wndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
         switch (uMsg) {
             case WM_CHAR: {
+                SHORT scanInfo = VkKeyScanA(wParam);
+                
                 if (wParam == VK_RETURN) {
                     FunctionEvent event;
                     _setFunctionEvent(event);
@@ -104,6 +114,13 @@ namespace tower {
 
                     dispatchEvent(&event);
 
+                    return 0;
+                } else if ((scanInfo & 0x00FF) == 'A' &&
+                           ((scanInfo >> 8) & 2))  {
+                    int length = getTextLength();
+                    
+                    setSelection(0, length);
+                    
                     return 0;
                 }
             }

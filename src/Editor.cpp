@@ -92,6 +92,7 @@ namespace tower {
         _findContext.currentIndex = 0;
         _findContext.needle = needle;
         
+        setSelection(0, 0);
         scrollToTop();
 
         findNext();
@@ -118,9 +119,7 @@ namespace tower {
 
             int diffLine = getCurrentLineIndex() - currentLine;
 
-            if (diffLine > 0) {                
-                SendMessage(_hwnd, EM_LINESCROLL, 0, diffLine);
-            }
+            SendMessage(_hwnd, EM_LINESCROLL, 0, diffLine - 3);
         }
     }
 
@@ -151,6 +150,8 @@ namespace tower {
     LRESULT CALLBACK Editor::wndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
         switch (uMsg) {
             case WM_CHAR: {
+                SHORT scanInfo = VkKeyScanA(wParam);
+            
                 if (wParam == VK_TAB) {
                     SendMessage(hwnd, EM_REPLACESEL, TRUE, reinterpret_cast<LPARAM>(L"    "));
                     
@@ -179,7 +180,20 @@ namespace tower {
                     dispatchEvent(&event);
                     
                     return 0;
+                } else if ((scanInfo & 0x00FF) == 'A' &&
+                           ((scanInfo >> 8) & 2))  {
+                    int length = getTextLength();
+                    
+                    setSelection(0, length);
+                    
+                    return 0;
                 }
+                
+                break;
+            }
+
+            case WM_KEYDOWN: {
+                break;
             }
 
             case EN_CHANGE:

@@ -15,6 +15,7 @@ namespace tower {
         ~FunctionLine();
         
         void setPosition(int x, int y, int width, int height);
+        void setSelection(int position, int length);
 
         HWND getHwnd() const { return _hwnd; }
 
@@ -22,6 +23,8 @@ namespace tower {
         void hide();
 
         std::wstring getText();
+        int getTextLength();
+        
         bool isVisible() const { return _isVisible; }
 
         void setFocus();

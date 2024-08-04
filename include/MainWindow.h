@@ -6,6 +6,7 @@
 
 #include "Editor.h"
 #include "FunctionLine.h"
+#include "FolderTree.h"
 #include "Container.h"
 #include "EventListener.h"
 #include "EventDispatcher.h"
@@ -67,13 +68,17 @@ namespace tower {
         void _createMenu();
         void _createEditor();
         void _createFunctionLine();
+        void _createFolderTree();
         void _createAccelerators();
         void _layout();
+
+        bool _onCommand(WPARAM wParam);
 
         HINSTANCE _hInstance;
         MainWindowHandles _handles;
         
         Editor* _editor;
         FunctionLine* _functionLine;
+        FolderTree* _folderTree;
     };
 }

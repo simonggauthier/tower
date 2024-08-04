@@ -46,14 +46,20 @@ namespace tower {
         _createMenu();
         _createEditor();
         _createFunctionLine();
+        _createFolderTree();
         _createAccelerators();
+
+        _layout();
 
         ShowWindow(_handles.mainWindow, SW_SHOWDEFAULT);
 
         _TOWER_DEBUG("GO\n");
+        
+        _folderTree->setFolder(L"C:/dev/projects/tower");
     }
     
     MainWindow::~MainWindow() {
+        delete _folderTree;
         delete _functionLine;
         delete _editor;
     }
@@ -126,79 +132,20 @@ namespace tower {
             }
 
             case WM_COMMAND: {
-                switch(LOWORD(wParam)) {
-                    case MainWindowControlIds::newFileMenuItem: {
-                        Event event("newFile");
-                        dispatchEvent(&event);
-                        break;
-                    }
-
-                    case MainWindowControlIds::openFileMenuItem: {
-                        Event event("openFile");
-                        dispatchEvent(&event);
-                        break;
-                    }
-
-                    case MainWindowControlIds::saveFileMenuItem: {
-                        Event event("saveFile");
-                        dispatchEvent(&event);
-                        break;
-                    }
-
-                    case MainWindowControlIds::saveFileAsMenuItem: {
-                        Event event("saveFileAs");
-                        dispatchEvent(&event);
-                        break;
-                    }
-
-                    case MainWindowControlIds::exitMenuItem: {
-                        Event event("exit");
-                        dispatchEvent(&event);
-                        break;
-                    }
-                    
-                    case MainWindowControlIds::findMenuItem: {
-                        _functionLine->show(L"find \"\"");
-                        
-                        _layout();
-                        
-                        break;
-                    }
-
-                    case MainWindowControlIds::findNextMenuItem: {
-                        _editor->findNext();
-                        
-                        break;
-                    }
-                    
-                    case MainWindowControlIds::replaceAllMenuItem: {
-                        _functionLine->show(L"replace-all \"\" \"\"");
-                        
-                        _layout();
-                        
-                        break;
-                    }
-
-                    case MainWindowControlIds::openFunctionsMenuItem: {
-                        _functionLine->show(L"");
-                        
-                        _layout();
-                        
-                        break;
-                    }
+                if (_onCommand(wParam)) {
+                    return 0;
                 }
             }
 
-            case WM_CTLCOLOREDIT:
-                {
-                    HDC hdc = reinterpret_cast<HDC>(wParam);
-                    SetBkColor(hdc, RGB(10, 10, 30));
-                    SetTextColor(hdc, RGB(222, 222, 222));
+            case WM_CTLCOLOREDIT: {
+                HDC hdc = reinterpret_cast<HDC>(wParam);
+                SetTextColor(hdc, RGB(222, 222, 222));
+                SetBkColor(hdc, RGB(10, 10, 30));
 
-                    HBRUSH hBrush = CreateSolidBrush(RGB(10, 10, 30));
+                HBRUSH hBrush = CreateSolidBrush(RGB(10, 10, 30));
 
-                    return reinterpret_cast<LRESULT>(hBrush);
-                }
+                return reinterpret_cast<LRESULT>(hBrush);
+            }
         }
 
         return DefWindowProc(hwnd, uMsg, wParam, lParam);
@@ -235,11 +182,13 @@ namespace tower {
     }
 
     void MainWindow::_createFunctionLine() {
-        std::ifstream cstream("c:\\dev\\projects\\tower\\tower.json");
-        nlohmann::json config = nlohmann::json::parse(cstream);
-
         _functionLine = new FunctionLine(_handles.mainWindow, _hInstance);
         _functionLine->addEventListener(this);
+    }
+
+    void MainWindow::_createFolderTree() {
+        _folderTree = new FolderTree(_handles.mainWindow, _hInstance);
+        _folderTree->addEventListener(this);
     }
 
     void MainWindow::_createAccelerators() {
@@ -274,18 +223,90 @@ namespace tower {
     }
     
     void MainWindow::_layout() {
-        if (_editor != nullptr) {
+        if (_editor != nullptr &&
+            _functionLine != nullptr && 
+            _folderTree != nullptr) {
             RECT rcClient;
 
             GetClientRect(_handles.mainWindow, &rcClient);
             
+            int folderTreeWidth = 300;
+            
             if (_functionLine->isVisible()) {
-                _editor->setPosition(0, 0, rcClient.right, rcClient.bottom - 30);
-                _functionLine->setPosition(0, rcClient.bottom - 30, rcClient.right, 30);
+                _editor->setPosition(folderTreeWidth, 0, rcClient.right - folderTreeWidth, rcClient.bottom - 30);
+                _functionLine->setPosition(folderTreeWidth, rcClient.bottom - 30, rcClient.right - folderTreeWidth, 30);
             } else {
-                _editor->setPosition(0, 0, rcClient.right, rcClient.bottom);
+                _editor->setPosition(folderTreeWidth, 0, rcClient.right - folderTreeWidth, rcClient.bottom);
             }
+            
+            _folderTree->setPosition(0, 0, folderTreeWidth, rcClient.bottom);
         }   
+    }
+
+    bool MainWindow::_onCommand(WPARAM wParam) {
+        switch(LOWORD(wParam)) {
+            case MainWindowControlIds::newFileMenuItem: {
+                Event event("newFile");
+                dispatchEvent(&event);
+                break;
+            }
+
+            case MainWindowControlIds::openFileMenuItem: {
+                Event event("openFile");
+                dispatchEvent(&event);
+                break;
+            }
+
+            case MainWindowControlIds::saveFileMenuItem: {
+                Event event("saveFile");
+                dispatchEvent(&event);
+                break;
+            }
+
+            case MainWindowControlIds::saveFileAsMenuItem: {
+                Event event("saveFileAs");
+                dispatchEvent(&event);
+                break;
+            }
+
+            case MainWindowControlIds::exitMenuItem: {
+                Event event("exit");
+                dispatchEvent(&event);
+                break;
+            }
+            
+            case MainWindowControlIds::findMenuItem: {
+                _functionLine->show(L"find \"\"");
+                
+                _layout();
+                
+                break;
+            }
+
+            case MainWindowControlIds::findNextMenuItem: {
+                _editor->findNext();
+                
+                break;
+            }
+            
+            case MainWindowControlIds::replaceAllMenuItem: {
+                _functionLine->show(L"replace-all \"\" \"\"");
+                
+                _layout();
+                
+                break;
+            }
+
+            case MainWindowControlIds::openFunctionsMenuItem: {
+                _functionLine->show(L"");
+                
+                _layout();
+                
+                break;
+            }
+        }
+
+        return true;
     }
 
     LRESULT CALLBACK MainWindow::trueWndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {\

@@ -150,62 +150,76 @@ namespace tower {
     LRESULT CALLBACK Editor::wndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
         switch (uMsg) {
             case WM_CHAR: {
-                SHORT scanInfo = VkKeyScanA(wParam);
-            
-                if (wParam == VK_TAB) {
-                    SendMessage(hwnd, EM_REPLACESEL, TRUE, reinterpret_cast<LPARAM>(L"    "));
-                    
-                    Event event("changed");
-                    dispatchEvent(&event);
-                    
-                    return 0;
-                } else if (wParam == VK_RETURN) {                    
-                    EditorLineInfo lineInfo = _getCurrentLineInfo();
-                    
-                    SendMessage(hwnd, EM_REPLACESEL, FALSE, reinterpret_cast<LPARAM>(L"\r\n"));
-
-                    // if (!lineInfo.hasOnlySpaces()) {
-                        std::wstring spaces(lineInfo.spacesAtStart, L' ');
-                        
-                        SendMessage(hwnd, EM_REPLACESEL, FALSE, reinterpret_cast<LPARAM>(spaces.c_str()));
-                    // }
-
-                    Event event("changed");
-                    dispatchEvent(&event);
-
-                    return 0;
-                } else if (wParam == VK_ESCAPE) {
-                    Event event("escape");
-                
-                    dispatchEvent(&event);
-                    
-                    return 0;
-                } else if ((scanInfo & 0x00FF) == 'A' &&
-                           ((scanInfo >> 8) & 2))  {
-                    int length = getTextLength();
-                    
-                    setSelection(0, length);
-                    
+                if (_onChar(wParam)) {
                     return 0;
                 }
                 
                 break;
             }
 
-            case WM_KEYDOWN: {
-                break;
-            }
-
-            case EN_CHANGE:
+            case EN_CHANGE: {
                 Event event("changed");
                 dispatchEvent(&event);
                 
                 break;
+            }
         }
         
         return CallWindowProc(_originalWndProc, hwnd, uMsg, wParam, lParam);
     }
     
+    bool Editor::_onChar(WPARAM wParam) {
+        SHORT scanInfo = VkKeyScanA(wParam);
+        
+        // Handle tabs
+        if (wParam == VK_TAB) {
+            SendMessage(_hwnd, EM_REPLACESEL, TRUE, reinterpret_cast<LPARAM>(L"    "));
+                    
+            Event event("changed");
+            dispatchEvent(&event);
+
+            return true;
+        }
+
+        // Handle enter
+        if (wParam == VK_RETURN) {                    
+            EditorLineInfo lineInfo = _getCurrentLineInfo();
+                    
+            SendMessage(_hwnd, EM_REPLACESEL, FALSE, reinterpret_cast<LPARAM>(L"\r\n"));
+
+            // if (!lineInfo.hasOnlySpaces()) {
+            std::wstring spaces(lineInfo.spacesAtStart, L' ');
+            
+            SendMessage(_hwnd, EM_REPLACESEL, FALSE, reinterpret_cast<LPARAM>(spaces.c_str()));
+            // }
+
+            Event event("changed");
+            dispatchEvent(&event);
+
+            return true;
+        }
+        
+        // Handle escape
+        if (wParam == VK_ESCAPE) {
+            Event event("escape");
+            dispatchEvent(&event);
+            
+            return true;
+        }
+
+        // Handle CTRL + A select all
+        if ((scanInfo & 0x00FF) == 'A' &&
+            ((scanInfo >> 8) & 2)) {
+            int length = getTextLength();
+            
+            setSelection(0, length);
+
+            return true;
+        }
+
+        return false;
+    }
+
     EditorLineInfo Editor::_getCurrentLineInfo() const {
         const int SIZE = 100;
         wchar_t buffer[SIZE] = {0};

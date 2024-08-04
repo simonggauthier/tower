@@ -96,37 +96,55 @@ namespace tower {
     LRESULT CALLBACK FunctionLine::wndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
         switch (uMsg) {
             case WM_CHAR: {
-                SHORT scanInfo = VkKeyScanA(wParam);
-                
-                if (wParam == VK_RETURN) {
-                    FunctionEvent event;
-                    _setFunctionEvent(event);
-
-                    dispatchEvent(&event);
-
-                    return 0;
-                } else if (wParam == VK_TAB) { 
-                    _positionCaretToNextArgument();
-
-                    return 0;
-                } else if (wParam == VK_ESCAPE) {
-                    Event event("escape");
-
-                    dispatchEvent(&event);
-
-                    return 0;
-                } else if ((scanInfo & 0x00FF) == 'A' &&
-                           ((scanInfo >> 8) & 2))  {
-                    int length = getTextLength();
-                    
-                    setSelection(0, length);
-                    
+                if (_onChar(wParam)) {
                     return 0;
                 }
             }
         }
 
         return CallWindowProc(_originalWndProc, hwnd, uMsg, wParam, lParam);
+    }
+
+    bool FunctionLine::_onChar(WPARAM wParam) {
+        SHORT scanInfo = VkKeyScanA(wParam);
+        
+        // Handle tabs
+        if (wParam == VK_TAB) { 
+            _positionCaretToNextArgument();
+
+            return true;
+        }
+
+        // Handle enter
+        if (wParam == VK_RETURN) {
+            FunctionEvent event;
+            _setFunctionEvent(event);
+
+            dispatchEvent(&event);
+
+            return true;
+        }
+
+    	// Handle escape
+        if (wParam == VK_ESCAPE) {
+            Event event("escape");
+
+            dispatchEvent(&event);
+
+            return true;
+        }
+        
+        // Handle CTRL + A select all
+        if ((scanInfo & 0x00FF) == 'A' &&
+            ((scanInfo >> 8) & 2)) {
+            int length = getTextLength();
+            
+            setSelection(0, length);
+            
+            return true;
+        }
+
+        return false;
     }
 
     void FunctionLine::_setCaretPosition(int position) {

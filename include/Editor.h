@@ -64,6 +64,8 @@ namespace tower {
         static LRESULT CALLBACK trueWndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
 
     private:
+        bool _onChar(WPARAM wParam);
+
         EditorLineInfo _getCurrentLineInfo() const;
         
         EditorFindContext _findContext;

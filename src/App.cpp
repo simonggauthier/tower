@@ -44,6 +44,8 @@ namespace tower {
         if (_currentFile == nullptr) {
             _currentFile = new File();
         }
+
+        _mainWindow->getFolderTree()->openFolder(L"C:/dev/projects/tower");
     }
 
     App::~App() {

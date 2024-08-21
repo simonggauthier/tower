@@ -7,17 +7,18 @@
 
 #include "EventListener.h"
 #include "EventDispatcher.h"
-#include "Folder.h"
+#include "FsNode.h"
 
 namespace tower {
     class RenderedItem {
     public:
-        RenderedItem(FolderItem folderItem, int x, int y, int width, int height) :
-            _folderItem(folderItem),
+        RenderedItem(FsNode* fsNode, int x, int y, int width, int height) :
+            _fsNode(fsNode),
             _x(x),
             _y(y),
             _width(width),
-            _height(height) {
+            _height(height),
+            _opened(false) {
             
         }
         
@@ -25,18 +26,19 @@ namespace tower {
         
         }
         
-        FolderItem getFolderItem() const { return _folderItem; }
+        FsNode* getFsNode() { return _fsNode; }
         const int getX() const { return _x; }
         const int getY() const { return _y; }
         const int getWidth() const { return _width; }
         const int getHeight() const { return _height; }
         
     private:
-        FolderItem _folderItem;
+        FsNode* _fsNode;
         int _x;
         int _y;
         int _width;
         int _height;
+        bool _opened;
     };
 
     class FolderTree : public EventDispatcher {
@@ -46,7 +48,7 @@ namespace tower {
         
         void setPosition(int x, int y, int width, int height);
         
-        void setFolder(std::wstring path);
+        void openFolder(std::wstring path);
 
         HWND getHwnd() const { return _hwnd; }
 
@@ -55,15 +57,16 @@ namespace tower {
 
     private:
         bool _onDraw(WPARAM wParam);
-        
-        RenderedItem* _getRenderedItem(int x, int y);
+        int _drawFsNode(HDC& hdc, RECT& clientRect, FsNode* fsNode, int count, int depth);
+        RenderedItem* _getRenderedItemAt(int x, int y);
 
         HWND _hwnd;
         WNDPROC _originalWndProc;
         HFONT _font;
         int _fontSize;
+        int _padding[2];
         
-        Folder* _folder;
+        FsNode* _folder;
         
         std::vector<RenderedItem> _renderedItems;
     };

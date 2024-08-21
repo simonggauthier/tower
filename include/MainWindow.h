@@ -60,6 +60,7 @@ namespace tower {
         
         Editor* getEditor() { return _editor; }
         FunctionLine* getFunctionLine() { return _functionLine; }
+        FolderTree* getFolderTree() { return _folderTree; }
 
         LRESULT CALLBACK wndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
         static LRESULT CALLBACK trueWndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam);

@@ -54,8 +54,6 @@ namespace tower {
         ShowWindow(_handles.mainWindow, SW_SHOWDEFAULT);
 
         _TOWER_DEBUG("GO\n");
-        
-        _folderTree->setFolder(L"C:/dev/projects/tower");
     }
     
     MainWindow::~MainWindow() {
@@ -230,7 +228,7 @@ namespace tower {
 
             GetClientRect(_handles.mainWindow, &rcClient);
             
-            int folderTreeWidth = 300;
+            int folderTreeWidth = 350;
             
             if (_functionLine->isVisible()) {
                 _editor->setPosition(folderTreeWidth, 0, rcClient.right - folderTreeWidth, rcClient.bottom - 30);

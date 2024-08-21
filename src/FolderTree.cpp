@@ -3,9 +3,11 @@
 #include <Windows.h>
 
 #include <string>
+#include <iterator>
 
 #include "FunctionEvent.h"
 #include "Container.h"
+#include "FsNode.h"
 #include "GlobalConfiguration.h"
 #include "Debug.h"
 
@@ -40,6 +42,9 @@ namespace tower {
 
         _font = CreateFont(_fontSize, 0, 0, 0, FW_DONTCARE, FALSE, FALSE, FALSE, DEFAULT_CHARSET, OUT_TT_PRECIS, CLIP_DEFAULT_PRECIS, CLEARTYPE_QUALITY, DEFAULT_PITCH | FF_DONTCARE, L"Consolas");
 
+        _padding[0] = 5;
+        _padding[1] = 5;
+
         ShowWindow(_hwnd, SW_SHOW);
     }
 
@@ -58,13 +63,15 @@ namespace tower {
         SetWindowPos(_hwnd, nullptr, x, y, width, height, SWP_NOZORDER);
     }
     
-    void FolderTree::setFolder(std::wstring path) {
+    void FolderTree::openFolder(std::wstring path) {
         if (_folder != nullptr) {
             delete _folder;
         }
         
-        _folder = new Folder(path);
+        _folder = new FsNode(path);
         
+        _TOWER_DEBUG_PRINT_FSNODE(_folder);
+
         SendMessage(_hwnd, WM_SETREDRAW, TRUE, 0);
     }
     
@@ -82,10 +89,10 @@ namespace tower {
                 int x = LOWORD(lParam);
                 int y = HIWORD(lParam);
                 
-                RenderedItem* item = _getRenderedItem(x, y);
+                RenderedItem* item = _getRenderedItemAt(x, y);
                 
                 if (item != nullptr) {
-                    _TOWER_DEBUGW(L"Click on  " << item->getFolderItem().getPath());
+                    _TOWER_DEBUGW(L"Click on  " << item->getFsNode()->getPath());
                 }
                 
                 break;
@@ -111,38 +118,51 @@ namespace tower {
 
         // Paint folder items
         if (_folder != nullptr) {
-            // Padding
-            clientRect.top += 5;
-            clientRect.left += 5;
-
-            for (const FolderItem& item : _folder->getItems()) {
-                std::wstring path = item.getPath();
-
-                if (item.getType() == FolderItemTypes::FOLDER) {
-                    path = L"+ " + path;
-                } else {
-                    path = L"  " + path;
-                }
-
-                SetTextColor(hdc, RGB(222, 222, 222));
-                SetBkMode(hdc, TRANSPARENT);
-                SelectObject(hdc, _font);
-                DrawText(hdc, path.c_str(), -1, &clientRect, DT_SINGLELINE);
-
-                _renderedItems.push_back(RenderedItem(item, clientRect.left, clientRect.top, clientRect.right - clientRect.left, _fontSize + 5));
-
-                clientRect.top += _fontSize + 5;
-            }
+            _renderedItems.clear();
+            
+            _drawFsNode(hdc, clientRect, _folder, 0, 0);
         }
 
         EndPaint(_hwnd, &ps);
 
         return false;
     }
+    
+    int FolderTree::_drawFsNode(HDC& hdc, RECT& clientRect, FsNode* fsNode, int count, int depth) {
+        std::wstring path = fsNode->getName();
+        RECT rect;
+        int mCount = 1;
 
-    RenderedItem* FolderTree::_getRenderedItem(int x, int y) {
-        _TOWER_DEBUGW(L"Get rendered item at " << x << L", " << y);
+        CopyRect(&rect, &clientRect);
 
+        rect.left += depth * 25;
+        rect.top += count * (_fontSize + 5);
+
+        if (fsNode->getType() == FsNodeTypes::directory) {
+            path = L"- " + path;
+        }
+    
+        SetTextColor(hdc, RGB(222, 222, 222));
+        SetBkMode(hdc, TRANSPARENT);
+        SelectObject(hdc, _font);
+        DrawText(hdc, path.c_str(), -1, &rect, DT_SINGLELINE);
+
+        if (fsNode->getType() == FsNodeTypes::directory) {
+            auto iterator = fsNode->childrenBegin();
+            
+            while (iterator != fsNode->childrenEnd()) {
+                mCount += _drawFsNode(hdc, clientRect, *iterator, count + mCount, depth + 1);
+
+                iterator = std::next(iterator, 1);
+            }
+        }
+        
+        _renderedItems.push_back(RenderedItem(fsNode, clientRect.left, clientRect.top, clientRect.right - clientRect.left, _fontSize));
+    
+        return mCount;
+    }
+
+    RenderedItem* FolderTree::_getRenderedItemAt(int x, int y) {
         for (auto& item : _renderedItems) {
             if (x > item.getX() &&
                 y > item.getY() &&
@@ -154,7 +174,7 @@ namespace tower {
         
         return nullptr;
     }
-
+    
     LRESULT CALLBACK FolderTree::trueWndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
         FolderTree* folderTree = nullptr;
 

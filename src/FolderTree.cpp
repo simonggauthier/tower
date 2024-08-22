@@ -28,7 +28,7 @@ namespace tower {
         _hwnd = CreateWindow(
             L"Folder Tree",
             nullptr,
-            WS_CHILD | WS_VISIBLE,
+            WS_CHILD | WS_VISIBLE | WS_BORDER,
             0, 0, 0, 0,
             parentHwnd,
             nullptr,
@@ -69,19 +69,25 @@ namespace tower {
         }
         
         _folder = new FsNode(path);
-        
-        _TOWER_DEBUG_PRINT_FSNODE(_folder);
 
-        SendMessage(_hwnd, WM_SETREDRAW, TRUE, 0);
+        RECT rect;
+        GetWindowRect(_hwnd, &rect);
+
+        SendMessage(_hwnd, WM_SIZE, 0, MAKELPARAM(rect.right - rect.left, rect.bottom - rect.top));
+        UpdateWindow(_hwnd);
     }
     
     LRESULT CALLBACK FolderTree::wndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
         switch (uMsg) {
             case WM_PAINT: {
-                if (_onDraw(wParam)) {
-                    return 0;
-                }
+                _onDraw(wParam);
             
+                break;
+            }
+
+            case WM_SIZE: {
+                _onSize(lParam);
+
                 break;
             }
             
@@ -97,12 +103,18 @@ namespace tower {
                 
                 break;
             }
+
+            case WM_VSCROLL: {
+                _onScroll(wParam, lParam);
+
+                break;
+            }
         }
 
         return DefWindowProc(hwnd, uMsg, wParam, lParam);
     }
 
-    bool FolderTree::_onDraw(WPARAM wParam) {
+    void FolderTree::_onDraw(WPARAM wParam) {
         _renderedItems.clear();
     
         PAINTSTRUCT ps;
@@ -124,19 +136,99 @@ namespace tower {
         }
 
         EndPaint(_hwnd, &ps);
+    }
 
-        return false;
+    void FolderTree::_onSize(LPARAM lParam) {
+        int height = HIWORD(lParam);
+
+        if (_countItems() > 0) {
+            SCROLLINFO scrollInfo = { 0 };
+            scrollInfo.cbSize = sizeof(scrollInfo); 
+            scrollInfo.fMask = SIF_RANGE | SIF_PAGE; 
+            scrollInfo.nMin = 0; 
+            scrollInfo.nMax = _countItems();
+            scrollInfo.nPage = height / (_fontSize + 5);
+            SetScrollInfo(_hwnd, SB_VERT, &scrollInfo, TRUE);
+        }
+    }
+
+    void FolderTree::_onScroll(WPARAM wParam, LPARAM lParam) {
+        WORD action = LOWORD(wParam);
+
+        SCROLLINFO scrollInfo = { 0 };
+        scrollInfo.cbSize = sizeof(scrollInfo);
+        scrollInfo.fMask = SIF_ALL;
+        GetScrollInfo(_hwnd, SB_VERT, &scrollInfo);
+
+        int currentPos = scrollInfo.nPos;
+        int newPos = -1;
+
+        switch (action) {
+            case SB_TOP:
+                newPos = scrollInfo.nMin;
+                break;
+
+            case SB_BOTTOM:
+                newPos = scrollInfo.nMax;
+                break;
+
+            case SB_LINEDOWN:
+                newPos = currentPos + 1;
+                break;
+
+            case SB_LINEUP:
+                newPos = currentPos - 1;
+                break;
+
+            case SB_THUMBTRACK:
+                newPos = scrollInfo.nTrackPos;
+                break;
+
+            case SB_PAGEDOWN:
+                newPos = currentPos + scrollInfo.nPage;
+                break;
+
+            case SB_PAGEUP:
+                newPos = currentPos - scrollInfo.nPage;
+                break;
+
+            default:
+            case SB_THUMBPOSITION:
+                newPos = currentPos;
+                break;
+        }
+
+        if (newPos != -1) {
+            _TOWER_DEBUG("newPos = " << newPos);
+
+            SetScrollPos(_hwnd, SB_VERT, newPos, TRUE);
+            
+            newPos = GetScrollPos(_hwnd, SB_VERT);
+
+            ScrollWindowEx(_hwnd, 0, (currentPos - newPos) * (_fontSize + 5),
+                           NULL, NULL, NULL, NULL, SW_ERASE | SW_INVALIDATE);
+        }
     }
     
+    int FolderTree::_countItems() {
+        if (_folder != nullptr) {
+            return _folder->countAllNodes();
+        }
+        
+        return 0;
+    }
+
     int FolderTree::_drawFsNode(HDC& hdc, RECT& clientRect, FsNode* fsNode, int count, int depth) {
         std::wstring path = fsNode->getName();
         RECT rect;
         int mCount = 1;
 
+        int scrollY = GetScrollPos(_hwnd, SB_VERT);
+
         CopyRect(&rect, &clientRect);
 
         rect.left += depth * 25;
-        rect.top += count * (_fontSize + 5);
+        rect.top += (count * (_fontSize + 5)) - (scrollY * (_fontSize + 5));
 
         if (fsNode->getType() == FsNodeTypes::directory) {
             path = L"- " + path;

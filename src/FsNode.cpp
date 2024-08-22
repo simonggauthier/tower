@@ -6,10 +6,12 @@
 #include <vector>
 #include <filesystem>
 #include <algorithm>
+#include <iterator>
 
 namespace tower {
     FsNode::FsNode(std::wstring path) :
-        _path(path) {
+        _path(path),
+        _countCache(-1) {
         _parsePath();
     }
     
@@ -21,6 +23,26 @@ namespace tower {
     
     std::wstring FsNode::getName() const {
         return _path.substr(_path.find_last_of(L"\\") + 1);
+    }
+
+    int FsNode::countAllNodes() {
+        if (_countCache == -1) {
+            int ret = 1;
+
+            if (_type == FsNodeTypes::directory) {
+                auto iterator = childrenBegin();
+
+                while (iterator != childrenEnd()) {
+                    ret += (*iterator)->countAllNodes();
+
+                    iterator = std::next(iterator, 1);
+                }
+            }
+
+            _countCache = ret;
+        }
+
+        return _countCache;
     }
 
     void FsNode::_parsePath() {

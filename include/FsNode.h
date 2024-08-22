@@ -24,14 +24,19 @@ namespace tower {
 
         std::wstring getName() const;
 
+        int countAllNodes();
+
     private:
         void _parsePath();
         void _parseEntry(std::filesystem::directory_entry entry);
+        int _countAllNodes(FsNode* fsNode, int total);
 
         std::wstring _path;
         FsNodeTypes _type;
         
         std::vector<FsNode*> _children;
+
+        int _countCache;
     };
 
     struct FsNodeComparator

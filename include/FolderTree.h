@@ -56,7 +56,12 @@ namespace tower {
         static LRESULT CALLBACK trueWndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
 
     private:
-        bool _onDraw(WPARAM wParam);
+        void _onDraw(WPARAM wParam);
+        void _onSize(LPARAM lParam);
+        void _onScroll(WPARAM wParam, LPARAM lParam);
+
+        int _countItems();
+
         int _drawFsNode(HDC& hdc, RECT& clientRect, FsNode* fsNode, int count, int depth);
         RenderedItem* _getRenderedItemAt(int x, int y);
 

@@ -61,6 +61,7 @@ namespace tower {
         void _onScroll(WPARAM wParam, LPARAM lParam);
 
         int _countItems();
+        int _getItemHeight() { return _fontSize + _itemPadding[0]; }
 
         int _drawFsNode(HDC& hdc, RECT& clientRect, FsNode* fsNode, int count, int depth);
         RenderedItem* _getRenderedItemAt(int x, int y);
@@ -68,10 +69,12 @@ namespace tower {
         HWND _hwnd;
         WNDPROC _originalWndProc;
         HFONT _font;
+        HFONT _directoryFont;
         int _fontSize;
-        int _padding[2];
+        int _itemPadding[2];
         
         FsNode* _folder;
+        FsNode* _selectedFile;
         
         std::vector<RenderedItem> _renderedItems;
     };

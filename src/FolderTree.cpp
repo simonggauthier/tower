@@ -13,7 +13,8 @@
 
 namespace tower {
     FolderTree::FolderTree(HWND parentHwnd, HINSTANCE hInstance) :
-        _folder(nullptr) {
+        _folder(nullptr),
+        _selectedFile(nullptr) {
 
         setEventDispatcherId("folderTree");
 
@@ -41,15 +42,18 @@ namespace tower {
         _fontSize = GlobalConfiguration::getInstance().getConfiguration()["folderTree"]["fontSize"];
 
         _font = CreateFont(_fontSize, 0, 0, 0, FW_DONTCARE, FALSE, FALSE, FALSE, DEFAULT_CHARSET, OUT_TT_PRECIS, CLIP_DEFAULT_PRECIS, CLEARTYPE_QUALITY, DEFAULT_PITCH | FF_DONTCARE, L"Consolas");
+        _directoryFont = CreateFont(_fontSize, 0, 0, 0, FW_BOLD, FALSE, FALSE, FALSE, DEFAULT_CHARSET, OUT_TT_PRECIS, CLIP_DEFAULT_PRECIS, CLEARTYPE_QUALITY, DEFAULT_PITCH | FF_DONTCARE, L"Consolas");
 
-        _padding[0] = 5;
-        _padding[1] = 5;
+        _itemPadding[0] = 5;
+        _itemPadding[1] = 5;
 
         ShowWindow(_hwnd, SW_SHOW);
     }
 
     FolderTree::~FolderTree() {
         DeleteObject(_font);
+        DeleteObject(_directoryFont);
+        
         DestroyWindow(_hwnd);
         
         if (_folder != nullptr) {
@@ -96,9 +100,15 @@ namespace tower {
                 int y = HIWORD(lParam);
                 
                 RenderedItem* item = _getRenderedItemAt(x, y);
+
+                _TOWER_DEBUG("Click " << x << ", " << y);
                 
                 if (item != nullptr) {
-                    _TOWER_DEBUGW(L"Click on  " << item->getFsNode()->getPath());
+                    if (item->getFsNode()->getType() == FsNodeTypes::file) {
+                        _selectedFile = item->getFsNode();
+
+                        InvalidateRect(_hwnd, 0, TRUE);
+                    }
                 }
                 
                 break;
@@ -125,8 +135,10 @@ namespace tower {
         
         // Paint the background
         hdc = BeginPaint(_hwnd, &ps);
-        HBRUSH brush = CreateSolidBrush(RGB(10, 10, 30));
+
+        HBRUSH brush = CreateSolidBrush(RGB(10, 10, 15));
         FillRect(hdc, &clientRect, brush);
+        DeleteObject(brush);
 
         // Paint folder items
         if (_folder != nullptr) {
@@ -147,7 +159,7 @@ namespace tower {
             scrollInfo.fMask = SIF_RANGE | SIF_PAGE; 
             scrollInfo.nMin = 0; 
             scrollInfo.nMax = _countItems();
-            scrollInfo.nPage = height / (_fontSize + 5);
+            scrollInfo.nPage = height / _getItemHeight();
             SetScrollInfo(_hwnd, SB_VERT, &scrollInfo, TRUE);
         }
     }
@@ -199,13 +211,11 @@ namespace tower {
         }
 
         if (newPos != -1) {
-            _TOWER_DEBUG("newPos = " << newPos);
-
             SetScrollPos(_hwnd, SB_VERT, newPos, TRUE);
             
             newPos = GetScrollPos(_hwnd, SB_VERT);
 
-            ScrollWindowEx(_hwnd, 0, (currentPos - newPos) * (_fontSize + 5),
+            ScrollWindowEx(_hwnd, 0, (currentPos - newPos) * _getItemHeight(),
                            NULL, NULL, NULL, NULL, SW_ERASE | SW_INVALIDATE);
         }
     }
@@ -228,15 +238,35 @@ namespace tower {
         CopyRect(&rect, &clientRect);
 
         rect.left += depth * 25;
-        rect.top += (count * (_fontSize + 5)) - (scrollY * (_fontSize + 5));
+        rect.top += (count - scrollY) * _getItemHeight();
 
         if (fsNode->getType() == FsNodeTypes::directory) {
             path = L"- " + path;
+            
+            SelectObject(hdc, _directoryFont);
+        } else {
+            SelectObject(hdc, _font);
+        }
+
+        if (_selectedFile == fsNode) {
+            RECT backgroundRect;
+
+            backgroundRect.left = clientRect.left;
+            backgroundRect.top = rect.top - _itemPadding[0];
+            backgroundRect.right = clientRect.right;
+            backgroundRect.bottom = rect.top + _getItemHeight();
+
+            _TOWER_DEBUG("eq " << backgroundRect.left << " " <<
+                                  backgroundRect.top << " " <<
+                                  backgroundRect.right << " " <<
+                                  backgroundRect.bottom);
+            HBRUSH brush = CreateSolidBrush(RGB(100, 100, 100));
+            FillRect(hdc, &backgroundRect, brush);
+            DeleteObject(brush);
         }
     
         SetTextColor(hdc, RGB(222, 222, 222));
         SetBkMode(hdc, TRANSPARENT);
-        SelectObject(hdc, _font);
         DrawText(hdc, path.c_str(), -1, &rect, DT_SINGLELINE);
 
         if (fsNode->getType() == FsNodeTypes::directory) {
@@ -249,7 +279,7 @@ namespace tower {
             }
         }
         
-        _renderedItems.push_back(RenderedItem(fsNode, clientRect.left, clientRect.top, clientRect.right - clientRect.left, _fontSize));
+        _renderedItems.push_back(RenderedItem(fsNode, rect.left, rect.top - _itemPadding[0], rect.right - rect.left, _fontSize + _itemPadding[0]));
     
         return mCount;
     }
